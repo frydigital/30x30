@@ -193,7 +193,7 @@ export default async function Home() {
       {/* Footer */}
       <footer className="border-t py-8 mt-12">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2024 30x30 Challenge. Built with Next.js, Shadcn UI, and Supabase.</p>
+          <p>© 30x30 Challenge</p>
         </div>
       </footer>
     </div>
