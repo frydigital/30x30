@@ -22,11 +22,12 @@ vi.mock('next/navigation', () => ({
 }))
 
 // Mock window.location
-delete (window as any).location
+delete (window as Partial<Window>).location
+// @ts-expect-error - location is read-only in normal conditions but needed for testing
 window.location = {
   href: 'http://localhost:3000',
   origin: 'http://localhost:3000',
-} as any
+} as Location
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
