@@ -19,14 +19,28 @@ export interface StravaConnection {
   updated_at: string;
 }
 
+export interface GarminConnection {
+  id: string;
+  user_id: string;
+  garmin_user_id: string;
+  access_token: string;
+  access_token_secret: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ActivitySource = 'strava' | 'garmin' | 'manual';
+
 export interface Activity {
   id: string;
   user_id: string;
-  strava_activity_id: number;
+  source: ActivitySource;
+  external_activity_id: string | null;
   activity_date: string; // YYYY-MM-DD format
   duration_minutes: number;
   activity_type: string;
   activity_name: string;
+  notes: string | null;
   created_at: string;
 }
 
@@ -70,6 +84,11 @@ export interface Database {
         Row: StravaConnection;
         Insert: Omit<StravaConnection, "id" | "created_at" | "updated_at">;
         Update: Partial<Omit<StravaConnection, "id" | "created_at">>;
+      };
+      garmin_connections: {
+        Row: GarminConnection;
+        Insert: Omit<GarminConnection, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<GarminConnection, "id" | "created_at">>;
       };
       activities: {
         Row: Activity;

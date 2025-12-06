@@ -24,17 +24,35 @@ CREATE TABLE IF NOT EXISTS strava_connections (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create activities table (individual activities from Strava)
+-- Create garmin_connections table
+CREATE TABLE IF NOT EXISTS garmin_connections (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
+  garmin_user_id TEXT NOT NULL,
+  access_token TEXT NOT NULL,
+  access_token_secret TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create activities table (individual activities from various sources)
 CREATE TABLE IF NOT EXISTS activities (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  strava_activity_id BIGINT NOT NULL UNIQUE,
+  source TEXT NOT NULL DEFAULT 'manual', -- 'strava', 'garmin', 'manual'
+  external_activity_id TEXT, -- External ID from Strava/Garmin (nullable for manual)
   activity_date DATE NOT NULL,
   duration_minutes INTEGER NOT NULL,
   activity_type TEXT NOT NULL,
   activity_name TEXT NOT NULL,
+  notes TEXT, -- Optional notes for manual entries
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create unique index for external activities (excludes manual entries with null external_id)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_source_external_id 
+  ON activities(source, external_activity_id) 
+  WHERE external_activity_id IS NOT NULL;
 
 -- Create daily_activities table (aggregated daily stats)
 CREATE TABLE IF NOT EXISTS daily_activities (
@@ -79,6 +97,9 @@ CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
 CREATE TRIGGER update_strava_connections_updated_at BEFORE UPDATE ON strava_connections
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_garmin_connections_updated_at BEFORE UPDATE ON garmin_connections
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_daily_activities_updated_at BEFORE UPDATE ON daily_activities
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -88,6 +109,7 @@ CREATE TRIGGER update_streaks_updated_at BEFORE UPDATE ON streaks
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strava_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE garmin_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaks ENABLE ROW LEVEL SECURITY;
@@ -115,12 +137,31 @@ CREATE POLICY "Users can update own strava connection" ON strava_connections
 CREATE POLICY "Users can delete own strava connection" ON strava_connections
   FOR DELETE USING (auth.uid() = user_id);
 
+-- Garmin connections policies (private to user)
+CREATE POLICY "Users can view own garmin connection" ON garmin_connections
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own garmin connection" ON garmin_connections
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own garmin connection" ON garmin_connections
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own garmin connection" ON garmin_connections
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Activities policies
 CREATE POLICY "Users can view own activities" ON activities
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own activities" ON activities
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own activities" ON activities
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own activities" ON activities
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- Daily activities policies
 CREATE POLICY "Users can view own daily activities" ON daily_activities

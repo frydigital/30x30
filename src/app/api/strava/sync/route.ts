@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActivities, refreshAccessToken } from "@/lib/strava/api";
+import { recalculateDailyActivities } from "@/lib/activities/utils";
 import { NextResponse } from "next/server";
 
 export async function POST() {
@@ -55,41 +56,24 @@ export async function POST() {
       const activityDate = activity.start_date_local.split("T")[0];
       const durationMinutes = Math.round(activity.moving_time / 60);
 
-      // Upsert activity
+      // Upsert activity with new schema
       await supabase
         .from("activities")
         .upsert({
           user_id: user.id,
-          strava_activity_id: activity.id,
+          source: "strava",
+          external_activity_id: activity.id.toString(),
           activity_date: activityDate,
           duration_minutes: durationMinutes,
           activity_type: activity.type,
           activity_name: activity.name,
         }, {
-          onConflict: "strava_activity_id",
+          onConflict: "source,external_activity_id",
         });
     }
 
-    // Aggregate daily activities
-    const dailyTotals: { [date: string]: number } = {};
-    for (const activity of activities) {
-      const activityDate = activity.start_date_local.split("T")[0];
-      const durationMinutes = Math.round(activity.moving_time / 60);
-      dailyTotals[activityDate] = (dailyTotals[activityDate] || 0) + durationMinutes;
-    }
-
-    // Upsert daily activities
-    for (const [date, totalMinutes] of Object.entries(dailyTotals)) {
-      await supabase
-        .from("daily_activities")
-        .upsert({
-          user_id: user.id,
-          activity_date: date,
-          total_duration_minutes: totalMinutes,
-        }, {
-          onConflict: "user_id,activity_date",
-        });
-    }
+    // Recalculate daily totals from all sources
+    await recalculateDailyActivities(supabase, user.id);
 
     // Update streak - call database function
     await supabase.rpc("update_user_streak", { p_user_id: user.id });
@@ -97,7 +81,6 @@ export async function POST() {
     return NextResponse.json({ 
       success: true, 
       synced: activities.length,
-      days: Object.keys(dailyTotals).length 
     });
   } catch (err) {
     console.error("Sync error:", err);

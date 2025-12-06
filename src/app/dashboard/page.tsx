@@ -25,6 +25,13 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .single();
 
+  // Get Garmin connection
+  const { data: garminConnection } = await supabase
+    .from("garmin_connections")
+    .select("garmin_user_id, created_at")
+    .eq("user_id", user.id)
+    .single();
+
   // Get streak data
   const { data: streak } = await supabase
     .from("streaks")
@@ -32,21 +39,31 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .single();
 
-  // Get recent activities
-  const { data: activities } = await supabase
+  // Get recent daily activities
+  const { data: dailyActivities } = await supabase
     .from("daily_activities")
     .select("*")
     .eq("user_id", user.id)
     .order("activity_date", { ascending: false })
     .limit(30);
 
+  // Get individual activities for the activity list
+  const { data: recentActivities } = await supabase
+    .from("activities")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("activity_date", { ascending: false })
+    .limit(50);
+
   return (
     <DashboardClient
       user={user}
       profile={profile}
       stravaConnected={!!stravaConnection}
+      garminConnected={!!garminConnection}
       streak={streak}
-      activities={activities || []}
+      dailyActivities={dailyActivities || []}
+      activities={recentActivities || []}
     />
   );
 }

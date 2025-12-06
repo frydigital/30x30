@@ -5,7 +5,10 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
 ## Features
 
 - **Public Leaderboard**: See who's leading the 30x30 challenge
-- **Strava Integration**: Automatically sync activities from Strava
+- **Multiple Data Sources**: 
+  - **Strava Integration**: Automatically sync activities from Strava
+  - **Garmin Connect Integration**: Automatically sync activities from Garmin
+  - **Manual Entry**: Log activities manually for any workout
 - **Magic Link Authentication**: Secure, passwordless login via email
 - **Personal Dashboard**: Track your streak, manage settings, and view your activity calendar
 - **Privacy Controls**: Choose whether to appear on the public leaderboard
@@ -16,7 +19,7 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
 - **UI Components**: Shadcn UI with Tailwind CSS
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth (Magic Link)
-- **Activity Data**: Strava API
+- **Activity Data**: Strava API, Garmin Connect API, Manual Entry
 
 ## Getting Started
 
@@ -24,7 +27,8 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
 
 - Node.js 18+
 - A Supabase account
-- A Strava API application
+- A Strava API application (optional)
+- A Garmin Connect API application (optional)
 
 ### Setup
 
@@ -47,8 +51,10 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
    Fill in your environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
-   - `STRAVA_CLIENT_ID`: Your Strava API client ID
-   - `STRAVA_CLIENT_SECRET`: Your Strava API client secret
+   - `STRAVA_CLIENT_ID`: Your Strava API client ID (optional)
+   - `STRAVA_CLIENT_SECRET`: Your Strava API client secret (optional)
+   - `GARMIN_CONSUMER_KEY`: Your Garmin API consumer key (optional)
+   - `GARMIN_CONSUMER_SECRET`: Your Garmin API consumer secret (optional)
    - `NEXT_PUBLIC_APP_URL`: Your app URL (e.g., http://localhost:3000)
 
 4. Set up the database:
@@ -61,16 +67,20 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
    - Disable "Confirm email" or configure email templates
    - Add your app URL to the allowed redirect URLs
 
-6. Configure Strava API:
+6. Configure Strava API (optional):
    - Create an API application at https://www.strava.com/settings/api
    - Set the callback URL to `{your-app-url}/api/strava/callback`
 
-7. Run the development server:
+7. Configure Garmin Connect API (optional):
+   - Apply for API access at https://developer.garmin.com/
+   - Set the callback URL to `{your-app-url}/api/garmin/callback`
+
+8. Run the development server:
    ```bash
    npm run dev
    ```
 
-8. Open [http://localhost:3000](http://localhost:3000)
+9. Open [http://localhost:3000](http://localhost:3000)
 
 ## Project Structure
 
@@ -78,7 +88,9 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
 src/
 ├── app/
 │   ├── api/
-│   │   └── strava/         # Strava OAuth & sync endpoints
+│   │   ├── strava/         # Strava OAuth & sync endpoints
+│   │   ├── garmin/         # Garmin OAuth & sync endpoints
+│   │   └── activities/     # Manual activity entry
 │   ├── auth/               # Auth callback handlers
 │   ├── dashboard/          # User dashboard
 │   ├── login/              # Login page
@@ -87,6 +99,7 @@ src/
 │   └── ui/                 # Shadcn UI components
 ├── lib/
 │   ├── strava/             # Strava API utilities
+│   ├── garmin/             # Garmin API utilities
 │   ├── supabase/           # Supabase client setup
 │   ├── types.ts            # TypeScript types
 │   └── utils.ts            # Utility functions
@@ -96,9 +109,9 @@ src/
 ## How It Works
 
 1. Users sign up/login with their email (magic link)
-2. Connect their Strava account to authorize activity access
-3. Sync activities from Strava (last 30 days)
-4. Activities are aggregated per day
+2. Connect their fitness platforms (Strava, Garmin) or add activities manually
+3. Sync activities from connected platforms (last 30 days)
+4. Activities from all sources are aggregated per day
 5. Days with 30+ minutes count toward the streak
 6. Streaks are calculated based on consecutive valid days
 7. Public profiles appear on the leaderboard

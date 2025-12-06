@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "@supabase/supabase-js";
-import { Profile, Streak, DailyActivity } from "@/lib/types";
+import { Profile, Streak, DailyActivity, Activity } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -22,22 +22,30 @@ import {
   Link2,
   Link2Off,
   Check,
-  X
+  X,
+  Plus,
+  Watch,
+  Edit3,
+  Trash2
 } from "lucide-react";
 
 interface DashboardClientProps {
   user: User;
   profile: Profile | null;
   stravaConnected: boolean;
+  garminConnected: boolean;
   streak: Streak | null;
-  activities: DailyActivity[];
+  dailyActivities: DailyActivity[];
+  activities: Activity[];
 }
 
 export default function DashboardClient({
   user,
   profile,
   stravaConnected,
+  garminConnected,
   streak,
+  dailyActivities,
   activities,
 }: DashboardClientProps) {
   const router = useRouter();
@@ -45,8 +53,20 @@ export default function DashboardClient({
   const [isPublic, setIsPublic] = useState(profile?.is_public ?? true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncingGarmin, setSyncingGarmin] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectingGarmin, setDisconnectingGarmin] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
+  // Manual entry state
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualDate, setManualDate] = useState(new Date().toISOString().split("T")[0]);
+  const [manualDuration, setManualDuration] = useState("");
+  const [manualType, setManualType] = useState("Workout");
+  const [manualName, setManualName] = useState("");
+  const [manualNotes, setManualNotes] = useState("");
+  const [addingManual, setAddingManual] = useState(false);
+  const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -116,11 +136,122 @@ export default function DashboardClient({
     setDisconnecting(false);
   };
 
+  const handleSyncGarmin = async () => {
+    setSyncingGarmin(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/garmin/sync", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: "success", text: `Synced ${data.synced} activities from Garmin!` });
+        router.refresh();
+      } else {
+        setMessage({ type: "error", text: data.error });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to sync Garmin activities" });
+    }
+    setSyncingGarmin(false);
+  };
+
+  const handleDisconnectGarmin = async () => {
+    if (!confirm("Are you sure you want to disconnect Garmin?")) return;
+    
+    setDisconnectingGarmin(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/garmin/disconnect", {
+        method: "POST",
+      });
+      
+      if (response.ok) {
+        setMessage({ type: "success", text: "Garmin disconnected" });
+        router.refresh();
+      } else {
+        const data = await response.json();
+        setMessage({ type: "error", text: data.error });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to disconnect Garmin" });
+    }
+    setDisconnectingGarmin(false);
+  };
+
+  const handleAddManualActivity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingManual(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/activities/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          activity_date: manualDate,
+          duration_minutes: parseInt(manualDuration),
+          activity_type: manualType,
+          activity_name: manualName || `${manualType} - ${manualDate}`,
+          notes: manualNotes,
+        }),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: "success", text: "Activity added!" });
+        setShowManualEntry(false);
+        setManualDuration("");
+        setManualName("");
+        setManualNotes("");
+        router.refresh();
+      } else {
+        setMessage({ type: "error", text: data.error });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to add activity" });
+    }
+    setAddingManual(false);
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    if (!confirm("Are you sure you want to delete this activity?")) return;
+    
+    setDeletingActivity(activityId);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/activities/manual?id=${activityId}`, {
+        method: "DELETE",
+      });
+      
+      if (response.ok) {
+        setMessage({ type: "success", text: "Activity deleted" });
+        router.refresh();
+      } else {
+        const data = await response.json();
+        setMessage({ type: "error", text: data.error });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to delete activity" });
+    }
+    setDeletingActivity(null);
+  };
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
   };
+
+  // Activity type options
+  const activityTypes = [
+    "Run", "Ride", "Swim", "Walk", "Hike", "Workout", 
+    "Yoga", "CrossFit", "WeightTraining", "Other"
+  ];
 
   // Generate activity calendar for last 30 days
   const generateCalendar = () => {
@@ -132,7 +263,7 @@ export default function DashboardClient({
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
       
-      const activity = activities.find(a => a.activity_date === dateStr);
+      const activity = dailyActivities.find(a => a.activity_date === dateStr);
       days.push({
         date: dateStr,
         dayOfWeek: date.toLocaleDateString("en", { weekday: "short" }),
@@ -216,7 +347,7 @@ export default function DashboardClient({
                 <div>
                   <p className="text-sm text-muted-foreground">Valid Days (30 days)</p>
                   <p className="text-3xl font-bold">
-                    {activities.filter(a => a.is_valid).length}
+                    {dailyActivities.filter(a => a.is_valid).length}
                   </p>
                 </div>
               </div>
@@ -269,57 +400,262 @@ export default function DashboardClient({
           </CardContent>
         </Card>
 
-        {/* Strava Connection */}
+        {/* Data Sources Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Strava Connection</CardTitle>
+            <CardTitle>Data Sources</CardTitle>
             <CardDescription>
-              Connect your Strava account to automatically sync your activities
+              Connect fitness platforms or add activities manually
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {stravaConnected ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex items-center gap-2 text-green-600">
-                  <Link2 className="w-5 h-5" />
-                  <span>Connected to Strava</span>
+          <CardContent className="space-y-6">
+            {/* Strava Connection */}
+            <div className="border-b pb-4">
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                </svg>
+                Strava
+              </h3>
+              {stravaConnected ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <Link2 className="w-5 h-5" />
+                    <span>Connected</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSyncStrava} disabled={syncing}>
+                      {syncing ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      Sync
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDisconnectStrava}
+                      disabled={disconnecting}
+                    >
+                      {disconnecting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Link2Off className="w-4 h-4 mr-2" />
+                      )}
+                      Disconnect
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleSyncStrava} disabled={syncing}>
-                    {syncing ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                    )}
-                    Sync Activities
+              ) : (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <X className="w-5 h-5" />
+                    <span>Not connected</span>
+                  </div>
+                  <Button size="sm" asChild>
+                    <a href="/api/strava/connect">
+                      <Link2 className="w-4 h-4 mr-2" />
+                      Connect Strava
+                    </a>
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDisconnectStrava}
-                    disabled={disconnecting}
+                </div>
+              )}
+            </div>
+
+            {/* Garmin Connection */}
+            <div className="border-b pb-4">
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <Watch className="w-5 h-5" />
+                Garmin Connect
+              </h3>
+              {garminConnected ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <Link2 className="w-5 h-5" />
+                    <span>Connected</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSyncGarmin} disabled={syncingGarmin}>
+                      {syncingGarmin ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                      )}
+                      Sync
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDisconnectGarmin}
+                      disabled={disconnectingGarmin}
+                    >
+                      {disconnectingGarmin ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Link2Off className="w-4 h-4 mr-2" />
+                      )}
+                      Disconnect
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <X className="w-5 h-5" />
+                    <span>Not connected</span>
+                  </div>
+                  <Button size="sm" asChild>
+                    <a href="/api/garmin/connect">
+                      <Link2 className="w-4 h-4 mr-2" />
+                      Connect Garmin
+                    </a>
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Manual Entry */}
+            <div>
+              <h3 className="font-medium mb-3 flex items-center gap-2">
+                <Edit3 className="w-5 h-5" />
+                Manual Entry
+              </h3>
+              {!showManualEntry ? (
+                <Button size="sm" onClick={() => setShowManualEntry(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Activity Manually
+                </Button>
+              ) : (
+                <form onSubmit={handleAddManualActivity} className="space-y-4 max-w-md">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="manualDate">Date</Label>
+                      <Input
+                        id="manualDate"
+                        type="date"
+                        value={manualDate}
+                        onChange={(e) => setManualDate(e.target.value)}
+                        max={new Date().toISOString().split("T")[0]}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="manualDuration">Duration (minutes)</Label>
+                      <Input
+                        id="manualDuration"
+                        type="number"
+                        placeholder="30"
+                        value={manualDuration}
+                        onChange={(e) => setManualDuration(e.target.value)}
+                        min="1"
+                        max="1440"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="manualType">Activity Type</Label>
+                      <select
+                        id="manualType"
+                        value={manualType}
+                        onChange={(e) => setManualType(e.target.value)}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        {activityTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="manualName">Activity Name</Label>
+                      <Input
+                        id="manualName"
+                        type="text"
+                        placeholder="Morning run"
+                        value={manualName}
+                        onChange={(e) => setManualName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manualNotes">Notes (optional)</Label>
+                    <Input
+                      id="manualNotes"
+                      type="text"
+                      placeholder="Add any notes..."
+                      value={manualNotes}
+                      onChange={(e) => setManualNotes(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={addingManual || !manualDuration}>
+                      {addingManual && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Add Activity
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setShowManualEntry(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activities */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activities</CardTitle>
+            <CardDescription>
+              Your activities from all sources
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activities.length > 0 ? (
+              <div className="space-y-2">
+                {activities.slice(0, 10).map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                   >
-                    {disconnecting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Link2Off className="w-4 h-4 mr-2" />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.source === 'strava' ? 'bg-orange-500' :
+                        activity.source === 'garmin' ? 'bg-blue-500' : 'bg-gray-500'
+                      }`} />
+                      <div>
+                        <p className="font-medium">{activity.activity_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {activity.activity_date} • {activity.duration_minutes} min • {activity.activity_type}
+                          <span className="ml-2 capitalize text-xs bg-muted px-1.5 py-0.5 rounded">
+                            {activity.source}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    {activity.source === 'manual' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteActivity(activity.id)}
+                        disabled={deletingActivity === activity.id}
+                      >
+                        {deletingActivity === activity.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        )}
+                      </Button>
                     )}
-                    Disconnect
-                  </Button>
-                </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <X className="w-5 h-5" />
-                  <span>Not connected</span>
-                </div>
-                <Button asChild>
-                  <a href="/api/strava/connect">
-                    <Link2 className="w-4 h-4 mr-2" />
-                    Connect Strava
-                  </a>
-                </Button>
-              </div>
+              <p className="text-muted-foreground text-center py-8">
+                No activities yet. Connect a fitness platform or add activities manually.
+              </p>
             )}
           </CardContent>
         </Card>
