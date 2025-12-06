@@ -91,18 +91,23 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_strava_connections_updated_at ON strava_connections;
 CREATE TRIGGER update_strava_connections_updated_at BEFORE UPDATE ON strava_connections
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_garmin_connections_updated_at ON garmin_connections;
 CREATE TRIGGER update_garmin_connections_updated_at BEFORE UPDATE ON garmin_connections
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_daily_activities_updated_at ON daily_activities;
 CREATE TRIGGER update_daily_activities_updated_at BEFORE UPDATE ON daily_activities
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_streaks_updated_at ON streaks;
 CREATE TRIGGER update_streaks_updated_at BEFORE UPDATE ON streaks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -115,85 +120,133 @@ ALTER TABLE daily_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaks ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles
   FOR SELECT USING (is_public = true);
 
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 CREATE POLICY "Users can view their own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE POLICY "Users can update their own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "System can create profiles for new users" ON profiles;
+CREATE POLICY "System can create profiles for new users" ON profiles
+  FOR INSERT WITH CHECK (true);
+
 -- Strava connections policies (private to user)
+DROP POLICY IF EXISTS "Users can view own strava connection" ON strava_connections;
 CREATE POLICY "Users can view own strava connection" ON strava_connections
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own strava connection" ON strava_connections;
 CREATE POLICY "Users can insert own strava connection" ON strava_connections
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own strava connection" ON strava_connections;
 CREATE POLICY "Users can update own strava connection" ON strava_connections
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own strava connection" ON strava_connections;
 CREATE POLICY "Users can delete own strava connection" ON strava_connections
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Garmin connections policies (private to user)
+DROP POLICY IF EXISTS "Users can view own garmin connection" ON garmin_connections;
 CREATE POLICY "Users can view own garmin connection" ON garmin_connections
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own garmin connection" ON garmin_connections;
 CREATE POLICY "Users can insert own garmin connection" ON garmin_connections
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own garmin connection" ON garmin_connections;
 CREATE POLICY "Users can update own garmin connection" ON garmin_connections
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own garmin connection" ON garmin_connections;
 CREATE POLICY "Users can delete own garmin connection" ON garmin_connections
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Activities policies
+DROP POLICY IF EXISTS "Users can view own activities" ON activities;
 CREATE POLICY "Users can view own activities" ON activities
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own activities" ON activities;
 CREATE POLICY "Users can insert own activities" ON activities
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own activities" ON activities;
 CREATE POLICY "Users can update own activities" ON activities
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own activities" ON activities;
 CREATE POLICY "Users can delete own activities" ON activities
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Daily activities policies
+DROP POLICY IF EXISTS "Users can view own daily activities" ON daily_activities;
 CREATE POLICY "Users can view own daily activities" ON daily_activities
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Public users daily activities viewable by everyone" ON daily_activities;
 CREATE POLICY "Public users daily activities viewable by everyone" ON daily_activities
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = daily_activities.user_id AND profiles.is_public = true)
   );
 
+DROP POLICY IF EXISTS "Users can insert own daily activities" ON daily_activities;
+CREATE POLICY "Users can insert own daily activities" ON daily_activities
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own daily activities" ON daily_activities;
+CREATE POLICY "Users can update own daily activities" ON daily_activities
+  FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own daily activities" ON daily_activities;
+CREATE POLICY "Users can delete own daily activities" ON daily_activities
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Streaks policies
+DROP POLICY IF EXISTS "Users can view own streaks" ON streaks;
 CREATE POLICY "Users can view own streaks" ON streaks
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Public users streaks viewable by everyone" ON streaks;
 CREATE POLICY "Public users streaks viewable by everyone" ON streaks
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = streaks.user_id AND profiles.is_public = true)
   );
 
--- Function to handle new user signup
+DROP POLICY IF EXISTS "System can create streaks for new users" ON streaks;
+CREATE POLICY "System can create streaks for new users" ON streaks
+  FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users can update own streaks" ON streaks;
+CREATE POLICY "Users can update own streaks" ON streaks
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Update handle_new_user function to also create streak record
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Insert profile with username from metadata if provided
   INSERT INTO profiles (id, email, username)
-  VALUES (NEW.id, NEW.email, NULL);
+  VALUES (
+    NEW.id, 
+    NEW.email, 
+    COALESCE(NEW.raw_user_meta_data->>'username', NULL)
+  );
   
   INSERT INTO streaks (user_id, current_streak, longest_streak, last_activity_date)
   VALUES (NEW.id, 0, 0, NULL);
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger for new user signup
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

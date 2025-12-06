@@ -34,6 +34,8 @@ interface DashboardClientProps {
   profile: Profile | null;
   stravaConnected: boolean;
   garminConnected: boolean;
+  stravaConfigured: boolean;
+  garminConfigured: boolean;
   streak: Streak | null;
   dailyActivities: DailyActivity[];
   activities: Activity[];
@@ -44,6 +46,8 @@ export default function DashboardClient({
   profile,
   stravaConnected,
   garminConnected,
+  stravaConfigured,
+  garminConfigured,
   streak,
   dailyActivities,
   activities,
@@ -453,12 +457,17 @@ export default function DashboardClient({
                     <X className="w-5 h-5" />
                     <span>Not connected</span>
                   </div>
-                  <Button size="sm" asChild>
+                  <Button size="sm" asChild disabled={!stravaConfigured}>
                     <a href="/api/strava/connect">
                       <Link2 className="w-4 h-4 mr-2" />
                       Connect Strava
                     </a>
                   </Button>
+                  {!stravaConfigured && (
+                    <p className="text-xs text-muted-foreground">
+                      Strava API credentials not configured
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -505,12 +514,17 @@ export default function DashboardClient({
                     <X className="w-5 h-5" />
                     <span>Not connected</span>
                   </div>
-                  <Button size="sm" asChild>
+                  <Button size="sm" asChild disabled={!garminConfigured}>
                     <a href="/api/garmin/connect">
                       <Link2 className="w-4 h-4 mr-2" />
                       Connect Garmin
                     </a>
                   </Button>
+                  {!garminConfigured && (
+                    <p className="text-xs text-muted-foreground">
+                      Garmin API credentials not configured
+                    </p>
+                  )}
                 </div>
               )}
             </div>

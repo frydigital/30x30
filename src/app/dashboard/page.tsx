@@ -55,12 +55,27 @@ export default async function DashboardPage() {
     .order("activity_date", { ascending: false })
     .limit(50);
 
+  // Check if API keys are configured
+  const stravaConfigured = !!(
+    process.env.STRAVA_CLIENT_ID && 
+    process.env.STRAVA_CLIENT_SECRET &&
+    process.env.STRAVA_CLIENT_ID !== 'your_strava_client_id'
+  );
+  
+  const garminConfigured = !!(
+    process.env.GARMIN_CONSUMER_KEY && 
+    process.env.GARMIN_CONSUMER_SECRET &&
+    process.env.GARMIN_CONSUMER_KEY !== 'your_garmin_consumer_key'
+  );
+
   return (
     <DashboardClient
       user={user}
       profile={profile}
       stravaConnected={!!stravaConnection}
       garminConnected={!!garminConnection}
+      stravaConfigured={stravaConfigured}
+      garminConfigured={garminConfigured}
       streak={streak}
       dailyActivities={dailyActivities || []}
       activities={recentActivities || []}

@@ -51,25 +51,58 @@ export async function POST() {
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
     const activities = await getActivities(accessToken, thirtyDaysAgo);
 
+    console.log(`Fetched ${activities.length} activities from Strava`);
+
     // Process and store activities
-    for (const activity of activities) {
+    const activitiesToUpsert = activities.map(activity => {
       const activityDate = activity.start_date_local.split("T")[0];
       const durationMinutes = Math.round(activity.moving_time / 60);
 
-      // Upsert activity with new schema
-      await supabase
+      return {
+        user_id: user.id,
+        source: "strava" as const,
+        external_activity_id: activity.id.toString(),
+        activity_date: activityDate,
+        duration_minutes: durationMinutes,
+        activity_type: activity.type,
+        activity_name: activity.name,
+      };
+    });
+
+    console.log(`Prepared ${activitiesToUpsert.length} activities to upsert`);
+
+    // Insert activities, handling duplicates
+    if (activitiesToUpsert.length > 0) {
+      // Get existing activity IDs
+      const externalIds = activitiesToUpsert.map(a => a.external_activity_id);
+      const { data: existing } = await supabase
         .from("activities")
-        .upsert({
-          user_id: user.id,
-          source: "strava",
-          external_activity_id: activity.id.toString(),
-          activity_date: activityDate,
-          duration_minutes: durationMinutes,
-          activity_type: activity.type,
-          activity_name: activity.name,
-        }, {
-          onConflict: "source,external_activity_id",
-        });
+        .select("external_activity_id")
+        .eq("user_id", user.id)
+        .eq("source", "strava")
+        .in("external_activity_id", externalIds);
+
+      const existingIds = new Set(existing?.map(a => a.external_activity_id) || []);
+      
+      // Filter out existing activities
+      const newActivities = activitiesToUpsert.filter(
+        a => !existingIds.has(a.external_activity_id)
+      );
+
+      console.log(`${newActivities.length} new activities to insert`);
+
+      if (newActivities.length > 0) {
+        const { error: insertError } = await supabase
+          .from("activities")
+          .insert(newActivities);
+
+        if (insertError) {
+          console.error("Insert error:", insertError);
+          return NextResponse.json({ error: `Failed to save activities: ${insertError.message}` }, { status: 500 });
+        }
+      }
+
+      console.log(`Successfully inserted ${newActivities.length} activities`);
     }
 
     // Recalculate daily totals from all sources
