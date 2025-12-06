@@ -36,16 +36,21 @@ export async function GET(request: Request) {
     // Exchange code for tokens
     const tokens = await exchangeCodeForTokens(code);
 
+    // Validate athlete data
+    if (!tokens.athlete?.id) {
+      console.error("Missing athlete ID in Strava response");
+      return NextResponse.redirect(`${origin}/dashboard?error=missing_athlete_data`);
+    }
+
     // Store/update Strava connection in database
     const { error: upsertError } = await supabase
       .from("strava_connections")
       .upsert({
         user_id: user.id,
-        strava_athlete_id: tokens.athlete?.id || 0,
+        strava_athlete_id: tokens.athlete.id,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at: tokens.expires_at,
-        updated_at: new Date().toISOString(),
       }, {
         onConflict: "user_id",
       });
@@ -61,7 +66,6 @@ export async function GET(request: Request) {
         .from("profiles")
         .update({ 
           avatar_url: tokens.athlete.profile,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
     }

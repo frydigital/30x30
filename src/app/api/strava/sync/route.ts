@@ -38,7 +38,6 @@ export async function POST() {
           access_token: newTokens.access_token,
           refresh_token: newTokens.refresh_token,
           expires_at: newTokens.expires_at,
-          updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
     } catch {
@@ -87,7 +86,6 @@ export async function POST() {
           user_id: user.id,
           activity_date: date,
           total_duration_minutes: totalMinutes,
-          updated_at: new Date().toISOString(),
         }, {
           onConflict: "user_id,activity_date",
         });

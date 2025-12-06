@@ -233,7 +233,7 @@ export default function DashboardClient({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-15 lg:grid-cols-30 gap-1">
+            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 lg:grid-cols-15 gap-1">
               {calendar.map((day, i) => (
                 <div
                   key={i}
