@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Mail, Loader2, CheckCircle } from "lucide-react";
+import { Mail, Loader2, CheckCircle, User } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -26,6 +27,9 @@ export default function LoginPage() {
       email,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          username: username || null,
+        },
       },
     });
 
@@ -42,7 +46,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">30x30 Challenge</CardTitle>
+          <CardTitle className="text-2xl font-bold">Join 30x30 Challenge</CardTitle>
           <CardDescription>
             Track your 30-minute daily activity streak for 30 days
           </CardDescription>
@@ -56,7 +60,7 @@ export default function LoginPage() {
                 We&apos;ve sent a magic link to <strong>{email}</strong>
               </p>
               <p className="text-sm text-muted-foreground">
-                Click the link in the email to sign in.
+                Click the link in the email to create your account.
               </p>
               <Button
                 variant="outline"
@@ -67,7 +71,26 @@ export default function LoginPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username (optional)</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="johndoe"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10"
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Used to display your name on the leaderboard
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -97,15 +120,15 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending magic link...
+                    Creating account...
                   </>
                 ) : (
-                  "Sign in with Magic Link"
+                  "Create Account"
                 )}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                No password needed. We&apos;ll send you a link to sign in.
+                No password needed. We&apos;ll send you a magic link.
               </p>
 
               <div className="relative">
@@ -114,14 +137,14 @@ export default function LoginPage() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    New here?
+                    Already have an account?
                   </span>
                 </div>
               </div>
 
               <Button type="button" variant="outline" className="w-full" asChild>
-                <Link href="/signup">
-                  Create an account
+                <Link href="/login">
+                  Sign in instead
                 </Link>
               </Button>
             </form>
