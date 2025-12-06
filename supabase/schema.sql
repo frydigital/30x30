@@ -1,0 +1,215 @@
+-- 30x30 Activity Streak Tracker Database Schema
+-- Run this in your Supabase SQL Editor
+
+-- Create profiles table (extends auth.users)
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email TEXT NOT NULL,
+  username TEXT UNIQUE,
+  avatar_url TEXT,
+  is_public BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create strava_connections table
+CREATE TABLE IF NOT EXISTS strava_connections (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
+  strava_athlete_id BIGINT NOT NULL,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create activities table (individual activities from Strava)
+CREATE TABLE IF NOT EXISTS activities (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  strava_activity_id BIGINT NOT NULL UNIQUE,
+  activity_date DATE NOT NULL,
+  duration_minutes INTEGER NOT NULL,
+  activity_type TEXT NOT NULL,
+  activity_name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create daily_activities table (aggregated daily stats)
+CREATE TABLE IF NOT EXISTS daily_activities (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  activity_date DATE NOT NULL,
+  total_duration_minutes INTEGER NOT NULL DEFAULT 0,
+  is_valid BOOLEAN GENERATED ALWAYS AS (total_duration_minutes >= 30) STORED,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, activity_date)
+);
+
+-- Create streaks table
+CREATE TABLE IF NOT EXISTS streaks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
+  current_streak INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
+  last_activity_date DATE,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_activities_user_date ON activities(user_id, activity_date);
+CREATE INDEX IF NOT EXISTS idx_daily_activities_user_date ON daily_activities(user_id, activity_date);
+CREATE INDEX IF NOT EXISTS idx_streaks_current ON streaks(current_streak DESC);
+
+-- Enable Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE strava_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE streaks ENABLE ROW LEVEL SECURITY;
+
+-- Profiles policies
+CREATE POLICY "Public profiles are viewable by everyone" ON profiles
+  FOR SELECT USING (is_public = true);
+
+CREATE POLICY "Users can view their own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+-- Strava connections policies (private to user)
+CREATE POLICY "Users can view own strava connection" ON strava_connections
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own strava connection" ON strava_connections
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own strava connection" ON strava_connections
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own strava connection" ON strava_connections
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Activities policies
+CREATE POLICY "Users can view own activities" ON activities
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own activities" ON activities
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Daily activities policies
+CREATE POLICY "Users can view own daily activities" ON daily_activities
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Public users daily activities viewable by everyone" ON daily_activities
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = daily_activities.user_id AND profiles.is_public = true)
+  );
+
+-- Streaks policies
+CREATE POLICY "Users can view own streaks" ON streaks
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Public users streaks viewable by everyone" ON streaks
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = streaks.user_id AND profiles.is_public = true)
+  );
+
+-- Function to handle new user signup
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, email, username)
+  VALUES (NEW.id, NEW.email, NULL);
+  
+  INSERT INTO streaks (user_id, current_streak, longest_streak, last_activity_date)
+  VALUES (NEW.id, 0, 0, NULL);
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger for new user signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Function to update streak
+CREATE OR REPLACE FUNCTION update_user_streak(p_user_id UUID)
+RETURNS VOID AS $$
+DECLARE
+  v_current_streak INTEGER := 0;
+  v_longest_streak INTEGER := 0;
+  v_last_date DATE;
+  v_prev_date DATE := NULL;
+  v_streak_count INTEGER := 0;
+  r RECORD;
+BEGIN
+  -- Get the current longest streak
+  SELECT longest_streak INTO v_longest_streak
+  FROM streaks WHERE user_id = p_user_id;
+  
+  IF v_longest_streak IS NULL THEN
+    v_longest_streak := 0;
+  END IF;
+
+  -- Calculate streak from valid days
+  FOR r IN 
+    SELECT activity_date FROM daily_activities 
+    WHERE user_id = p_user_id AND is_valid = true 
+    ORDER BY activity_date DESC
+  LOOP
+    IF v_prev_date IS NULL THEN
+      -- First valid day
+      v_streak_count := 1;
+      v_last_date := r.activity_date;
+    ELSIF r.activity_date = v_prev_date - INTERVAL '1 day' THEN
+      -- Consecutive day
+      v_streak_count := v_streak_count + 1;
+    ELSE
+      -- Gap in streak, stop counting current streak
+      EXIT;
+    END IF;
+    v_prev_date := r.activity_date;
+  END LOOP;
+
+  -- Check if streak is still active (last activity within 1 day)
+  IF v_last_date IS NOT NULL AND v_last_date >= CURRENT_DATE - INTERVAL '1 day' THEN
+    v_current_streak := v_streak_count;
+  ELSE
+    v_current_streak := 0;
+  END IF;
+
+  -- Update longest streak if current is higher
+  IF v_current_streak > v_longest_streak THEN
+    v_longest_streak := v_current_streak;
+  END IF;
+
+  -- Upsert streak record
+  INSERT INTO streaks (user_id, current_streak, longest_streak, last_activity_date, updated_at)
+  VALUES (p_user_id, v_current_streak, v_longest_streak, v_last_date, NOW())
+  ON CONFLICT (user_id) DO UPDATE SET
+    current_streak = EXCLUDED.current_streak,
+    longest_streak = EXCLUDED.longest_streak,
+    last_activity_date = EXCLUDED.last_activity_date,
+    updated_at = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create view for leaderboard
+CREATE OR REPLACE VIEW public_leaderboard AS
+SELECT 
+  p.id as user_id,
+  p.username,
+  p.avatar_url,
+  s.current_streak,
+  s.longest_streak,
+  (SELECT COUNT(*) FROM daily_activities da WHERE da.user_id = p.id AND da.is_valid = true)::INTEGER as total_valid_days
+FROM profiles p
+JOIN streaks s ON p.id = s.user_id
+WHERE p.is_public = true
+ORDER BY s.current_streak DESC, s.longest_streak DESC, total_valid_days DESC;
