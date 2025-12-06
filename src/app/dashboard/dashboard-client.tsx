@@ -24,7 +24,8 @@ import {
   Check,
   Plus,
   Edit3,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 
 interface DashboardClientProps {
@@ -526,9 +527,7 @@ export default function DashboardClient({
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${
-                        activity.source === 'strava' ? 'bg-orange-500' :
-                        activity.source === 'garmin' ? 'bg-blue-500' : 'bg-gray-500'
-                      }`} />
+                        activity.source === 'strava' ? 'bg-orange-500' : 'bg-gray-500'}`} />
                       <div>
                         <p className="font-medium">{activity.activity_name}</p>
                         <p className="text-sm text-muted-foreground">
