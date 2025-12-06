@@ -22,9 +22,7 @@ import {
   Link2,
   Link2Off,
   Check,
-  X,
   Plus,
-  Watch,
   Edit3,
   Trash2
 } from "lucide-react";
@@ -33,9 +31,7 @@ interface DashboardClientProps {
   user: User;
   profile: Profile | null;
   stravaConnected: boolean;
-  garminConnected: boolean;
   stravaConfigured: boolean;
-  garminConfigured: boolean;
   streak: Streak | null;
   dailyActivities: DailyActivity[];
   activities: Activity[];
@@ -45,9 +41,7 @@ export default function DashboardClient({
   user,
   profile,
   stravaConnected,
-  garminConnected,
   stravaConfigured,
-  garminConfigured,
   streak,
   dailyActivities,
   activities,
@@ -57,9 +51,7 @@ export default function DashboardClient({
   const [isPublic, setIsPublic] = useState(profile?.is_public ?? true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [syncingGarmin, setSyncingGarmin] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [disconnectingGarmin, setDisconnectingGarmin] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   
   // Manual entry state
@@ -140,51 +132,6 @@ export default function DashboardClient({
     setDisconnecting(false);
   };
 
-  const handleSyncGarmin = async () => {
-    setSyncingGarmin(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch("/api/garmin/sync", {
-        method: "POST",
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage({ type: "success", text: `Synced ${data.synced} activities from Garmin!` });
-        router.refresh();
-      } else {
-        setMessage({ type: "error", text: data.error });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Failed to sync Garmin activities" });
-    }
-    setSyncingGarmin(false);
-  };
-
-  const handleDisconnectGarmin = async () => {
-    if (!confirm("Are you sure you want to disconnect Garmin?")) return;
-    
-    setDisconnectingGarmin(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch("/api/garmin/disconnect", {
-        method: "POST",
-      });
-      
-      if (response.ok) {
-        setMessage({ type: "success", text: "Garmin disconnected" });
-        router.refresh();
-      } else {
-        const data = await response.json();
-        setMessage({ type: "error", text: data.error });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Failed to disconnect Garmin" });
-    }
-    setDisconnectingGarmin(false);
-  };
 
   const handleAddManualActivity = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -466,63 +413,6 @@ export default function DashboardClient({
                   {!stravaConfigured && (
                     <p className="text-xs text-muted-foreground">
                       Strava API credentials not configured
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Garmin Connection */}
-            <div className="border-b pb-4">
-              <h3 className="font-medium mb-3 flex items-center gap-2">
-                <Watch className="w-5 h-5" />
-                Garmin Connect
-              </h3>
-              {garminConnected ? (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <Link2 className="w-5 h-5" />
-                    <span>Connected</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSyncGarmin} disabled={syncingGarmin}>
-                      {syncingGarmin ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                      )}
-                      Sync
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleDisconnectGarmin}
-                      disabled={disconnectingGarmin}
-                    >
-                      {disconnectingGarmin ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Link2Off className="w-4 h-4 mr-2" />
-                      )}
-                      Disconnect
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <X className="w-5 h-5" />
-                    <span>Not connected</span>
-                  </div>
-                  <Button size="sm" asChild disabled={!garminConfigured}>
-                    <a href="/api/garmin/connect">
-                      <Link2 className="w-4 h-4 mr-2" />
-                      Connect Garmin
-                    </a>
-                  </Button>
-                  {!garminConfigured && (
-                    <p className="text-xs text-muted-foreground">
-                      Garmin API credentials not configured
                     </p>
                   )}
                 </div>
