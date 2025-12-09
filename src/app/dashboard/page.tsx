@@ -49,10 +49,15 @@ export default async function DashboardPage() {
     .limit(50);
 
   // Check if API keys are configured
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+
   const stravaConfigured = !!(
     process.env.STRAVA_CLIENT_ID && 
     process.env.STRAVA_CLIENT_SECRET &&
-    process.env.STRAVA_CLIENT_ID !== 'your_strava_client_id'
+    process.env.STRAVA_CLIENT_ID !== 'your_strava_client_id' &&
+    appUrl
   );
 
   return (

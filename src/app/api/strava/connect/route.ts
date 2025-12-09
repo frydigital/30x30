@@ -3,6 +3,10 @@ import { getStravaAuthUrl } from "@/lib/strava/api";
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+
 export async function GET() {
   const supabase = await createClient();
   
@@ -10,6 +14,23 @@ export async function GET() {
   
   if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const hasStravaConfig =
+    process.env.STRAVA_CLIENT_ID &&
+    process.env.STRAVA_CLIENT_SECRET &&
+    process.env.STRAVA_CLIENT_ID !== "your_strava_client_id" &&
+    appUrl;
+
+  // Ensure Strava is configured server-side to avoid opaque redirect errors
+  if (!hasStravaConfig) {
+    return NextResponse.json(
+      {
+        error:
+          "Strava is not configured. Please set STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, and either NEXT_PUBLIC_APP_URL or VERCEL_URL.",
+      },
+      { status: 503 }
+    );
   }
 
   // Generate a state parameter for CSRF protection

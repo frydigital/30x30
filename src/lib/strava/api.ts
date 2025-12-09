@@ -1,7 +1,11 @@
 // Strava OAuth configuration
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
 export const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID!;
 export const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET!;
-export const STRAVA_REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL + "/api/strava/callback";
+export const STRAVA_REDIRECT_URI = `${appUrl}/api/strava/callback`;
 
 export const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 export const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
@@ -117,6 +121,23 @@ export async function getActivities(
 
   if (!response.ok) {
     throw new Error("Failed to fetch activities");
+  }
+
+  return response.json();
+}
+
+export async function getActivity(
+  accessToken: string,
+  activityId: number | string
+): Promise<StravaActivity> {
+  const response = await fetch(`${STRAVA_API_URL}/activities/${activityId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch activity");
   }
 
   return response.json();
