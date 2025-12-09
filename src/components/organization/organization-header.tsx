@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Building2, Settings, Plus, Users } from "lucide-react";
+import { Building2, Settings, Users } from "lucide-react";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 import type { Organization, OrganizationRole } from "@/lib/types";
 

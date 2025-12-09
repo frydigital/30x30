@@ -97,12 +97,13 @@ export default function CreateOrganizationPage() {
       // Redirect to organization dashboard
       const orgUrl = buildOrganizationUrl(organization.slug);
       window.location.href = `${orgUrl}/dashboard`;
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error creating organization:", err);
-      if (err.message?.includes('duplicate') || err.code === '23505') {
+      const error = err as { message?: string; code?: string };
+      if (error.message?.includes('duplicate') || error.code === '23505') {
         setError("This organization slug is already taken. Please choose another.");
       } else {
-        setError(err.message || "Failed to create organization. Please try again.");
+        setError(error.message || "Failed to create organization. Please try again.");
       }
       setLoading(false);
     }
@@ -238,7 +239,7 @@ export default function CreateOrganizationPage() {
 
             <div className="pt-4 border-t">
               <p className="text-sm text-muted-foreground text-center">
-                You'll be set as the organization owner and can invite members after creation.
+                You&apos;ll be set as the organization owner and can invite members after creation.
               </p>
             </div>
           </form>

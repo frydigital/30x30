@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,7 @@ import { Loader2, CheckCircle, Mail, User, Building2 } from "lucide-react";
 import { getOrganizationInvitation, acceptOrganizationInvitation } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 
-export default function JoinOrganizationPage() {
-  const router = useRouter();
+function JoinOrganizationContent() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -84,7 +84,7 @@ export default function JoinOrganizationPage() {
 
       if (!org) throw new Error('Organization not found');
 
-      const { error: signUpError } = await supabase.auth.signInWithOtp({
+      const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: true,
@@ -95,12 +95,13 @@ export default function JoinOrganizationPage() {
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (authError) throw authError;
 
       setSent(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error sending OTP:', err);
-      setError(err.message || 'Failed to send verification code. Please try again.');
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to send verification code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -138,9 +139,10 @@ export default function JoinOrganizationPage() {
 
       // Redirect to organization dashboard
       window.location.href = '/dashboard';
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error verifying OTP:', err);
-      setError(err.message || 'Invalid verification code. Please try again.');
+      const error = err as { message?: string };
+      setError(error.message || 'Invalid verification code. Please try again.');
       setVerifying(false);
     }
   };
@@ -155,8 +157,8 @@ export default function JoinOrganizationPage() {
               <p className="text-muted-foreground">
                 No organization specified. Please use an invitation link or access from an organization subdomain.
               </p>
-              <Button asChild variant="outline">
-                <a href="/">Go to Home</a>
+              <Button variant="outline" asChild>
+                <Link href="/">Go to Home</Link>
               </Button>
             </div>
           </CardContent>
@@ -315,5 +317,17 @@ export default function JoinOrganizationPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function JoinOrganizationPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <JoinOrganizationContent />
+    </Suspense>
   );
 }

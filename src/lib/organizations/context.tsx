@@ -70,6 +70,7 @@ export function OrganizationProvider({
 
   useEffect(() => {
     refreshOrganization();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationSlug]);
 
   return (

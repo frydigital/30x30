@@ -119,7 +119,7 @@ export async function addOrganizationMember(
 export async function getOrganizationMembers(
   supabase: SupabaseClient,
   organizationId: string
-): Promise<{ data: (OrganizationMember & { profile: any })[] | null; error: Error | null }> {
+): Promise<{ data: (OrganizationMember & { profile: { id: string; email: string; username: string | null; avatar_url: string | null } })[] | null; error: Error | null }> {
   try {
     const { data, error } = await supabase
       .from('organization_members')
@@ -132,7 +132,7 @@ export async function getOrganizationMembers(
 
     if (error) throw error;
 
-    return { data: data as any, error: null };
+    return { data: data as (OrganizationMember & { profile: { id: string; email: string; username: string | null; avatar_url: string | null } })[], error: null };
   } catch (error) {
     return { data: null, error: error as Error };
   }
@@ -200,7 +200,7 @@ export async function hasOrganizationPermission(
     if (error) throw error;
 
     return data === true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -315,9 +315,9 @@ export async function getOrganizationInvitation(
       throw new Error('Invitation has expired');
     }
 
-    return { data: data as any, error: null };
-  } catch (error) {
-    return { data: null, error: error as Error };
+    return { data: data as (OrganizationInvitation & { organization: Organization }), error: null };
+  } catch (err) {
+    return { data: null, error: err as Error };
   }
 }
 

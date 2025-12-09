@@ -71,7 +71,7 @@ export default async function OrganizationLeaderboardPage({
             {organization.name} Leaderboard
           </h1>
           <p className="text-lg text-muted-foreground">
-            Track your team's progress in the 30x30 Challenge
+            Track your team&apos;s progress in the 30x30 Challenge
           </p>
         </div>
 

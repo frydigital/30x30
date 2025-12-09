@@ -13,8 +13,7 @@ import {
   createOrganizationInvitation, 
   updateMemberRole, 
   removeOrganizationMember,
-  getOrganizationBySlug,
-  updateOrganization
+  getOrganizationBySlug
 } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 import type { OrganizationMember, Organization, OrganizationRole } from "@/lib/types";
@@ -23,7 +22,7 @@ export default function OrganizationAdminPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [members, setMembers] = useState<(OrganizationMember & { profile: any })[]>([]);
+  const [members, setMembers] = useState<(OrganizationMember & { profile: { id: string; email: string; username: string | null; avatar_url: string | null } })[]>([]);
   const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<OrganizationRole>("member");
@@ -82,9 +81,10 @@ export default function OrganizationAdminPage() {
         if (membersError) throw membersError;
         
         setMembers(membersData || []);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error loading data:', err);
-        setError(err.message || 'Failed to load organization data');
+        const error = err as { message?: string };
+        setError(error.message || 'Failed to load organization data');
       } finally {
         setLoading(false);
       }
@@ -121,12 +121,13 @@ export default function OrganizationAdminPage() {
       setSuccess(`Invitation sent! Share this link: ${inviteUrl}`);
       setInviteEmail('');
       setInviteRole('member');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error inviting member:', err);
-      if (err.message?.includes('duplicate')) {
+      const error = err as { message?: string };
+      if (error.message?.includes('duplicate')) {
         setError('An invitation has already been sent to this email');
       } else {
-        setError(err.message || 'Failed to send invitation');
+        setError(error.message || 'Failed to send invitation');
       }
     } finally {
       setInviting(false);
@@ -146,9 +147,10 @@ export default function OrganizationAdminPage() {
       const { data: membersData } = await getOrganizationMembers(supabase, organization.id);
       setMembers(membersData || []);
       setSuccess('Member role updated successfully');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error updating role:', err);
-      setError(err.message || 'Failed to update member role');
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to update member role');
     }
   };
 
@@ -166,9 +168,10 @@ export default function OrganizationAdminPage() {
       const { data: membersData } = await getOrganizationMembers(supabase, organization.id);
       setMembers(membersData || []);
       setSuccess('Member removed successfully');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error removing member:', err);
-      setError(err.message || 'Failed to remove member');
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to remove member');
     }
   };
 

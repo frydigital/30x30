@@ -27,8 +27,8 @@ export interface OrganizationSettings {
   id: string;
   organization_id: string;
   custom_domains: string[] | null;
-  api_keys: Record<string, any>;
-  settings: Record<string, any>;
+  api_keys: Record<string, unknown>;
+  settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
