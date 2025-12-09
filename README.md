@@ -1,15 +1,23 @@
 # 30x30 Challenge
 
-A public-facing leaderboard tracking daily streak activity for 30 days, with a minimum of 30 minutes of activity per day.
+A multi-tenant fitness tracking platform for organizations and teams to run 30x30 challenges - tracking daily streak activity for 30 days with a minimum of 30 minutes of activity per day.
 
 ## Features
 
-- **Public Leaderboard**: See who's leading the 30x30 challenge
+### Multi-Tenancy & Organizations
+- **Organization Management**: Create and manage organizations with unique subdomains (e.g., `acme.30x30.app`)
+- **Role-Based Access Control**: Three-tier permission system (Owner, Admin, Member)
+- **Team Leaderboards**: Organization-specific leaderboards for team competitions
+- **Member Management**: Invite team members via email with role assignment
+- **Organization Settings**: Manage custom domains and API keys (future)
+
+### Activity Tracking
+- **Public Leaderboard**: See who's leading the 30x30 challenge globally
 - **Multiple Data Sources**: 
   - **Strava Integration**: Automatically sync activities from Strava
   - **Garmin Connect Integration**: Automatically sync activities from Garmin
   - **Manual Entry**: Log activities manually for any workout
-- **Magic Link Authentication**: Secure, passwordless login via email
+- **Magic Link Authentication**: Secure, passwordless login via email with OTP
 - **Personal Dashboard**: Track your streak, manage settings, and view your activity calendar
 - **Privacy Controls**: Choose whether to appear on the public leaderboard
 
@@ -51,6 +59,7 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
    Fill in your environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+   - `NEXT_PUBLIC_BASE_DOMAIN`: Your base domain (e.g., 30x30.app)
    - `STRAVA_CLIENT_ID`: Your Strava API client ID (optional)
    - `STRAVA_CLIENT_SECRET`: Your Strava API client secret (optional)
    - `GARMIN_CONSUMER_KEY`: Your Garmin API consumer key (optional)
@@ -61,6 +70,7 @@ A public-facing leaderboard tracking daily streak activity for 30 days, with a m
    - Go to your Supabase dashboard
    - Navigate to SQL Editor
    - Run the schema from `supabase/schema.sql`
+   - Run the multi-tenancy schema from `supabase/multi-tenancy-schema.sql`
 
 5. Configure Supabase Auth:
    - Enable Email provider in Authentication settings
@@ -108,13 +118,29 @@ src/
 
 ## How It Works
 
-1. Users sign up/login with their email (magic link)
-2. Connect their fitness platforms (Strava, Garmin) or add activities manually
-3. Sync activities from connected platforms (last 30 days)
-4. Activities from all sources are aggregated per day
-5. Days with 30+ minutes count toward the streak
-6. Streaks are calculated based on consecutive valid days
-7. Public profiles appear on the leaderboard
+### For Organizations
+1. Organization owners create an organization at `/create-organization`
+2. Each organization gets a unique subdomain (e.g., `teamname.30x30.app`)
+3. Admins invite members via email with role assignments
+4. Members join through invitation links or subdomain signup
+5. Organization leaderboards show team-specific rankings
+6. Admins manage members, roles, and organization settings
+
+### For Individuals
+1. Users sign up/login with their email (magic link with OTP)
+2. Join organizations or use personal tracking
+3. Connect fitness platforms (Strava, Garmin) or add activities manually
+4. Sync activities from connected platforms (last 30 days)
+5. Activities from all sources are aggregated per day
+6. Days with 30+ minutes count toward the streak
+7. Streaks are calculated based on consecutive valid days
+8. Public profiles appear on the leaderboard
+
+### Multi-Tenant Architecture
+- **Subdomain Routing**: Each organization has its own subdomain
+- **Row-Level Security**: Database policies ensure data isolation between organizations
+- **Role-Based Permissions**: Owner, Admin, and Member roles with hierarchical permissions
+- **Organization Context**: All activities and data are scoped to organizations
 
 ## License
 
