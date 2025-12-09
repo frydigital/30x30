@@ -604,16 +604,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Update the handle_new_user function to support organization context
+-- Update the handle_new_user function to support organization context with validation
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
   v_organization_id UUID;
+  v_org_exists BOOLEAN;
 BEGIN
   -- Check if user is signing up with an organization context
   v_organization_id := (NEW.raw_user_meta_data->>'organization_id')::UUID;
   
-  -- Insert profile with username and organization from metadata if provided
+  -- Validate organization exists and is active if provided
+  IF v_organization_id IS NOT NULL THEN
+    SELECT EXISTS(
+      SELECT 1 FROM organizations 
+      WHERE id = v_organization_id AND is_active = true
+    ) INTO v_org_exists;
+    
+    -- If organization doesn't exist or isn't active, clear the organization_id
+    IF NOT v_org_exists THEN
+      RAISE WARNING 'Organization % does not exist or is not active', v_organization_id;
+      v_organization_id := NULL;
+    END IF;
+  END IF;
+  
+  -- Insert profile with username and validated organization from metadata
   INSERT INTO profiles (id, email, username, organization_id)
   VALUES (
     NEW.id, 
@@ -626,7 +641,7 @@ BEGIN
   INSERT INTO streaks (user_id, current_streak, longest_streak, last_activity_date, organization_id)
   VALUES (NEW.id, 0, 0, NULL, v_organization_id);
   
-  -- If organization context exists, add user as member
+  -- If valid organization context exists, add user as member
   IF v_organization_id IS NOT NULL THEN
     INSERT INTO organization_members (organization_id, user_id, role)
     VALUES (v_organization_id, NEW.id, 'member');
@@ -655,7 +670,7 @@ LEFT JOIN organizations o ON p.organization_id = o.id
 WHERE p.is_public = true
 ORDER BY s.current_streak DESC, s.longest_streak DESC, total_valid_days DESC;
 
--- Create organization leaderboard view
+-- Create organization leaderboard view with optimized query
 CREATE OR REPLACE VIEW organization_leaderboard AS
 SELECT 
   p.id as user_id,
@@ -665,13 +680,19 @@ SELECT
   om.role as member_role,
   s.current_streak,
   s.longest_streak,
-  (SELECT COUNT(*) FROM daily_activities da 
-   WHERE da.user_id = p.id 
-     AND da.is_valid = true 
-     AND da.organization_id = p.organization_id)::INTEGER as total_valid_days
+  COALESCE(da_counts.total_valid_days, 0)::INTEGER as total_valid_days
 FROM profiles p
 JOIN streaks s ON p.id = s.user_id
 JOIN organization_members om ON p.id = om.user_id AND p.organization_id = om.organization_id
+LEFT JOIN (
+  SELECT 
+    user_id, 
+    organization_id,
+    COUNT(*) as total_valid_days
+  FROM daily_activities
+  WHERE is_valid = true
+  GROUP BY user_id, organization_id
+) da_counts ON p.id = da_counts.user_id AND p.organization_id = da_counts.organization_id
 WHERE p.organization_id IS NOT NULL
 ORDER BY p.organization_id, s.current_streak DESC, s.longest_streak DESC, total_valid_days DESC;
 

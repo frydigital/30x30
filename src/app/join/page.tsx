@@ -84,6 +84,8 @@ function JoinOrganizationContent() {
 
       if (!org) throw new Error('Organization not found');
 
+      // Note: organization_id is passed in user metadata but validated server-side
+      // in the handle_new_user database function to prevent unauthorized access
       const { error: authError } = await supabase.auth.signInWithOtp({
         email,
         options: {

@@ -252,6 +252,20 @@ export async function updateOrganizationSettings(
 /**
  * Create an organization invitation
  */
+/**
+ * Generate a cryptographically secure random token for invitations
+ */
+function generateSecureToken(): string {
+  // Generate 32 random bytes for a secure token
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  // Convert to base64url format (URL-safe)
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
 export async function createOrganizationInvitation(
   supabase: SupabaseClient,
   data: {
@@ -264,8 +278,8 @@ export async function createOrganizationInvitation(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Generate token and expiration
-    const token = crypto.randomUUID();
+    // Generate cryptographically secure token
+    const token = generateSecureToken();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 

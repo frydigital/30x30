@@ -115,8 +115,9 @@ export default function OrganizationAdminPage() {
 
       if (inviteError) throw inviteError;
 
-      // Build invitation URL
-      const inviteUrl = `${window.location.origin}/join?token=${invitation?.token}`;
+      // Build invitation URL using environment variable or fallback
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const inviteUrl = `${baseUrl}/join?token=${invitation?.token}`;
       
       setSuccess(`Invitation sent! Share this link: ${inviteUrl}`);
       setInviteEmail('');
