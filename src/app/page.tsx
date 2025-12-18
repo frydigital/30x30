@@ -57,7 +57,7 @@ export default async function Home() {
       </header>
 
       {/* Hero */}
-      <section className="py-16 px-4 text-center bg-gradient-to-b from-orange-50 to-background dark:from-orange-950/20">
+      <section className="py-16 px-4 text-center bg-linear-to-b from-orange-50 to-background dark:from-orange-950/20">
         <div className="container mx-auto max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             30 Days. 30 Minutes.
