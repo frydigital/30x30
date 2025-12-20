@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { isSuperadmin, getPlatformStatistics } from "@/lib/superadmin";
+import { AppHeader } from "@/components/navigation/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, TrendingUp, Activity, Crown } from "lucide-react";
 import Link from "next/link";
@@ -38,24 +39,28 @@ export default async function SuperadminDashboard() {
   // Get platform statistics
   const { data: stats } = await getPlatformStatistics(supabase);
 
+  // Get user profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, email")
+    .eq("id", user.id)
+    .single();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown className="w-6 h-6 text-yellow-500" />
-              <h1 className="text-2xl font-bold">Superadmin Dashboard</h1>
-            </div>
-            <Button asChild variant="outline">
-              <Link href="/dashboard">Exit Superadmin</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader 
+        userName={profile?.username || undefined}
+        userEmail={profile?.email || user.email || undefined}
+      />
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Page Title */}
+        <div className="flex items-center gap-3">
+          <Crown className="w-8 h-8 text-yellow-500" />
+          <h1 className="text-3xl font-bold">Superadmin Dashboard</h1>
+        </div>
+
         {/* Platform Statistics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>

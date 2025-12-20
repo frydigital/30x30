@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ClientAppHeader } from "@/components/navigation/client-app-header";
 import { User } from "@supabase/supabase-js";
 import { Profile, Streak, DailyActivity, Activity } from "@/lib/types";
 import { useRouter } from "next/navigation";
@@ -233,25 +234,7 @@ export default function DashboardClient({
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-primary">
-            30x30
-          </Link>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback>
-                {(profile?.username || user.email || "U").charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
+      <ClientAppHeader />
 
       <main className="container mx-auto px-4 py-8 space-y-8">
         {message && (

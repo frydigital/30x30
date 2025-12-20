@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Building2, Users, Settings, Mail, UserX, Shield } from "lucide-react";
+import { ClientAppHeader } from "@/components/navigation/client-app-header";
 import { 
   getOrganizationMembers, 
   createOrganizationInvitation, 
@@ -204,6 +205,7 @@ export default function OrganizationAdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <ClientAppHeader />
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -213,9 +215,6 @@ export default function OrganizationAdminPage() {
               <p className="text-muted-foreground">Organization Administration</p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => router.push('/dashboard')}>
-            Back to Dashboard
-          </Button>
         </div>
 
         {error && (
