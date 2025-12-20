@@ -136,6 +136,82 @@ export interface UserOrganization {
   joined_at: string;
 }
 
+// ============================================
+// SUPERADMIN TYPES
+// ============================================
+
+export interface Superadmin {
+  id: string;
+  user_id: string;
+  granted_by: string | null;
+  granted_at: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
+export type BillingCycle = 'monthly' | 'yearly';
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price_monthly: number | null;
+  price_yearly: number | null;
+  max_members: number | null; // null = unlimited
+  features: string[]; // Array of feature descriptions
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrganizationSubscription {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  billing_cycle: BillingCycle;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  trial_ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SubscriptionAction = 'created' | 'upgraded' | 'downgraded' | 'canceled' | 'renewed';
+
+export interface SubscriptionHistory {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  action: SubscriptionAction;
+  previous_plan_id: string | null;
+  changed_by: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface OrganizationStatistics {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  is_active: boolean;
+  plan_name: string | null;
+  plan_slug: string | null;
+  subscription_status: SubscriptionStatus | null;
+  member_count: number;
+  owner_count: number;
+  admin_count: number;
+  active_users_30d: number;
+  total_activities_30d: number;
+}
+
 export interface Database {
   public: {
     Tables: {

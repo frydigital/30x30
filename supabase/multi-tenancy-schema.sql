@@ -24,7 +24,11 @@ CREATE TABLE IF NOT EXISTS organizations (
 -- ORGANIZATION ROLES ENUM
 -- ============================================
 -- Define roles for organization members
-CREATE TYPE organization_role AS ENUM ('owner', 'admin', 'member');
+DO $$ BEGIN
+  CREATE TYPE organization_role AS ENUM ('owner', 'admin', 'member');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================
 -- ORGANIZATION MEMBERS TABLE

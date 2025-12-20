@@ -3,6 +3,64 @@
 ## Overview
 Multi-tenant fitness tracking platform built with Next.js 16 App Router, Supabase (PostgreSQL with RLS), and subdomain-based organization routing. Users track 30-day fitness streaks, with teams having isolated data and leaderboards.
 
+## User & Admin Hierarchy
+
+The platform has a multi-level access control system:
+
+### 1. Public Users (No Account)
+- View public leaderboard at root domain (`30x30.app`)
+- Browse marketing pages
+- Sign up to create organization or join existing ones
+
+### 2. Participants (Organization Members)
+- **Role**: `member` in `organization_members` table
+- **Access**: Organization-scoped pages (`/org/*`)
+- **Capabilities**:
+  - Track personal activities (manual, Strava, Garmin)
+  - View organization leaderboard
+  - See their own profile and stats
+  - Cannot manage other users or organization settings
+
+### 3. Organization Admins
+- **Role**: `admin` in `organization_members` table
+- **Access**: All member access + `/org/admin`
+- **Capabilities**:
+  - Invite and remove members
+  - Manage member roles (except owners)
+  - Update organization settings
+  - View member list and activity
+  - Cannot remove organization owners
+  - Cannot delete organization
+
+### 4. Organization Owners (Group Admins)
+- **Role**: `owner` in `organization_members` table
+- **Access**: All admin access + full control
+- **Capabilities**:
+  - All admin capabilities
+  - Manage organization subscription
+  - Remove admins
+  - Delete organization
+  - Transfer ownership
+  - **Cannot be removed** from organization
+
+**Note**: User who creates an organization automatically becomes owner.
+
+### 5. Superadmins (Platform Administrators)
+- **Table**: `superadmins` table (separate from organization roles)
+- **Access**: `/superadmin/*` routes (root domain only)
+- **Capabilities**:
+  - View all organizations and statistics
+  - Manage subscriptions across all organizations
+  - Activate/deactivate organizations
+  - View platform-wide metrics
+  - Grant/revoke superadmin access
+  - Manage subscription plans
+  - Access any organization's data (via RLS policies)
+
+**Check superadmin status**: `isSuperadmin(supabase, userId)` from `lib/superadmin/index.ts`
+
+**Important**: Superadmin is NOT an organization role. A user can be both a superadmin and a member of organizations.
+
 ## Architecture Pattern: Multi-Tenancy via Subdomains
 
 ### Subdomain Routing (Critical)
@@ -151,16 +209,19 @@ src/
 ├── app/
 │   ├── api/              # API routes (OAuth callbacks, manual entry, sync)
 │   ├── org/              # Organization-scoped pages (leaderboard, admin)
+│   ├── superadmin/       # Platform admin pages (dashboard, orgs, subscriptions)
 │   ├── create-organization/  # Root domain only
 │   └── join/             # Join org via invitation or subdomain
 ├── components/
 │   ├── organization/     # OrganizationHeader (client component)
-│   └── ui/               # Shadcn components
+│   └── ui/               # Shadcn components (button, card, badge, etc.)
 └── lib/
     ├── organizations/
     │   ├── index.ts      # CRUD functions (createOrganization, inviteMembers)
     │   ├── subdomain.ts  # Subdomain utilities
     │   └── context.tsx   # OrganizationProvider, useOrganization()
+    ├── superadmin/
+    │   └── index.ts      # Superadmin utilities (manage orgs, subscriptions)
     ├── supabase/         # Client/server/middleware setup
     ├── activities/       # Activity aggregation utilities
     └── types.ts          # TypeScript interfaces
@@ -199,5 +260,36 @@ STRAVA_CLIENT_SECRET=...                  # Optional
 ## Reference Documentation
 
 - Multi-tenancy setup: `MULTI_TENANCY_SETUP.md`
-- Database schema: `supabase/schema.sql`, `supabase/multi-tenancy-schema.sql`
+- Database schema: `supabase/schema.sql`, `supabase/multi-tenancy-schema.sql`, `supabase/superadmin-schema.sql`
 - Organization utilities: `src/lib/organizations/index.ts`
+- Superadmin utilities: `src/lib/superadmin/index.ts`
+
+## Superadmin Patterns
+
+### Superadmin Access Control
+Routes under `/superadmin/*` are protected:
+1. Must be accessed from root domain (not organization subdomain)
+2. User must exist in `superadmins` table
+3. Authentication checked in each page component
+
+```typescript
+// In superadmin page
+const supabase = await createClient();
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) redirect("/login");
+
+const isSuper = await isSuperadmin(supabase);
+if (!isSuper) redirect("/dashboard");
+```
+
+### Subscription Management
+Organizations are automatically assigned a "Free" plan on creation:
+- Trigger `create_default_subscription` runs after org insert
+- Superadmins can upgrade/downgrade plans via `/superadmin/subscriptions`
+- Subscription changes logged in `subscription_history` table
+
+### Database Schema Notes
+Run schemas in this order:
+1. `supabase/schema.sql` - Base tables (profiles, activities, etc.)
+2. `supabase/multi-tenancy-schema.sql` - Organization tables and RLS
+3. `supabase/superadmin-schema.sql` - Superadmin and subscription tables
