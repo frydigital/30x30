@@ -1,21 +1,13 @@
 'use client';
 
+import { createClient } from '@/lib/supabase/client';
+import { isSuperadmin } from '@/lib/superadmin';
+import { BarChart3, LayoutDashboard, Shield, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, User, Settings, LayoutDashboard, Users, Shield, BarChart3 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
-import { isSuperadmin } from '@/lib/superadmin';
 import { SidebarGroup, SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar';
+import type { SidebarData } from './app-sidebar';
 
 interface AppHeaderProps {
   organizationSlug?: string;
@@ -24,6 +16,7 @@ interface AppHeaderProps {
   userName?: string;
   userEmail?: string;
   userAvatarUrl?: string;
+  navigationData: SidebarData;
 }
 
 export function AppHeader({
@@ -33,6 +26,7 @@ export function AppHeader({
   userName,
   userEmail,
   userAvatarUrl,
+  navigationData,
 }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();

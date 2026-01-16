@@ -1,12 +1,12 @@
 "use client"
 
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import { ChevronRight } from "lucide-react";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -16,22 +16,27 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
-import { Crown, Building2, CreditCard, Users, BarChart3 } from "lucide-react";
+} from "@/components/ui/sidebar";
+import { BarChart3, Building2, CreditCard, Users } from "lucide-react";
+
+export type NavItem = {
+  title: string
+  url: string
+}
+
+export type NavMainItem = {
+  title: string
+  url: string
+  icon?: string
+  isActive?: boolean
+  items?: NavItem[]
+}
+
 
 export function NavMain({
   items,
 }: {
-  items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
+  items: NavMainItem[]
 }) {
   const navItems = [
     {

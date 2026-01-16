@@ -25,14 +25,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
+
+export type NavProject = {
+  name: string
+  url: string
+  icon?: LucideIcon
+}
+
+
 export function NavProjects({
   projects,
 }: {
-  projects: {
-    name: string
-    url: string
-    icon: LucideIcon
-  }[]
+  projects: NavProject[]
 }) {
   const { isMobile } = useSidebar()
 
@@ -44,7 +48,7 @@ export function NavProjects({
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
               <a href={item.url}>
-                <item.icon />
+                {item.icon && <item.icon />}
                 <span>{item.name}</span>
               </a>
             </SidebarMenuButton>

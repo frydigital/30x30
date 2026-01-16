@@ -28,14 +28,17 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+export type NavUser = {
+  name: string
+  email?: string
+  avatar?: string
+}
+
+
 export function NavUser({
   user,
 }: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
+  user: NavUser
 }) {
   const router = useRouter();
   const { isMobile } = useSidebar()
