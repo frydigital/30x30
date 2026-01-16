@@ -27,16 +27,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ data, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
-      {data.teams && (
+      {(data.teams && data.teams[0]) && (
         <SidebarHeader>
           <TeamSwitcher teams={data.teams} />
         </SidebarHeader>
       )}
       <SidebarContent>
-        {data.navMain && (
+        {(data.navMain && data.navMain[0]) && (
           <NavMain items={data.navMain} />
         )}
-        {data.projects && (
+        {(data.projects && data.projects[0]) && (
           <NavProjects projects={data.projects} />
         )}
       </SidebarContent>

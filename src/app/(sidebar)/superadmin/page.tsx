@@ -1,11 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { isSuperadmin, getPlatformStatistics } from "@/lib/superadmin";
-import { AppHeader } from "@/components/navigation/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, TrendingUp, Activity, Crown } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { getPlatformStatistics, isSuperadmin } from "@/lib/superadmin";
+import { Activity, Building2, Crown, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +46,7 @@ export default async function SuperadminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <AppHeader 
-        userName={profile?.username || undefined}
-        userEmail={profile?.email || user.email || undefined}
-      />
+      
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Page Title */}

@@ -4,6 +4,7 @@ import { extractSubdomain } from '@/lib/organizations/subdomain';
 import { createClient } from '@/lib/supabase/client';
 import { isSuperadmin } from '@/lib/superadmin';
 import type { Organization, OrganizationRole } from '@/lib/types';
+import { LayoutDashboard, Settings, ShieldUser } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AppSidebar, type SidebarData } from './app-sidebar';
@@ -108,12 +109,12 @@ export function ClientAppHeader() {
           {
             title: 'Leaderboard',
             url: `/org/leaderboard?org=${orgSlug}`,
-
+           // icon: AwardIcon
           },
           {
             title: 'My Activity',
             url: `/org/activity?org=${orgSlug}`,
-
+          //  icon: SquareActivity
           },
         ],
       });
@@ -121,13 +122,8 @@ export function ClientAppHeader() {
       navMain.push({
         title: 'Dashboard',
         url: '/dashboard',
+        icon: LayoutDashboard,
         isActive: pathname === '/dashboard',
-        items: [
-          {
-            title: 'Overview',
-            url: '/dashboard',
-          },
-        ],
       });
     }
 
@@ -158,7 +154,7 @@ export function ClientAppHeader() {
         title: 'Superadmin',
         url: '/superadmin',
         isActive: pathname === '/superadmin',
-
+        icon: ShieldUser,
         items: [
           {
             title: 'Dashboard',
@@ -182,6 +178,7 @@ export function ClientAppHeader() {
     navMain.push({
       title: 'Settings',
       url: '/settings',
+      icon: Settings,
       isActive: pathname?.startsWith('/settings'),
       items: [
         {
