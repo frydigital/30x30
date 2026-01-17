@@ -89,15 +89,14 @@ export default function DashboardClient({
 
   return (
     <>
-        
-            {message && (
+      {message && (
         <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>
           {message.text}
         </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -144,6 +143,7 @@ export default function DashboardClient({
       </div>
 
       {/* Activity Calendar */}
+            <div className="grid gap-4 py-2">
       <Card>
         <CardHeader>
           <CardTitle>Activity Calendar (Last 30 Days)</CardTitle>
@@ -157,10 +157,10 @@ export default function DashboardClient({
               <div
                 key={i}
                 className={`aspect-square rounded flex flex-col items-center justify-center text-xs ${day.isValid
-                    ? "bg-green-500 text-white"
-                    : day.minutes > 0
-                      ? "bg-yellow-200 dark:bg-yellow-800"
-                      : "bg-muted"
+                  ? "bg-green-500 text-white"
+                  : day.minutes > 0
+                    ? "bg-yellow-200 dark:bg-yellow-800"
+                    : "bg-muted"
                   }`}
                 title={`${day.date}: ${day.minutes} min`}
               >
@@ -186,10 +186,12 @@ export default function DashboardClient({
           </div>
         </CardContent>
       </Card>
-
+</div>
 
 
       {/* Recent Activities */}
+            <div className="grid gap-4 py-2">
+
       <Card>
         <CardHeader>
           <CardTitle>Recent Activities</CardTitle>
@@ -241,6 +243,7 @@ export default function DashboardClient({
           )}
         </CardContent>
       </Card>
+      </div>
     </>
   );
 }

@@ -39,7 +39,7 @@ export default async function SuperadminDashboard() {
 
   return (
     <>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 py-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -102,6 +102,8 @@ export default async function SuperadminDashboard() {
         </div>
 
         {/* Subscriptions by Plan */}
+                    <div className="grid gap-4 py-2">
+
         <Card>
           <CardHeader>
             <CardTitle>Subscriptions by Plan</CardTitle>
@@ -126,9 +128,9 @@ export default async function SuperadminDashboard() {
             </div>
           </CardContent>
         </Card>
-
+</div>
         {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
           <Card className="hover:bg-accent transition-colors cursor-pointer">
             <Link href="/superadmin/organizations">
               <CardHeader>

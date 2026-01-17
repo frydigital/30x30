@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  CreditCard, 
-  DollarSign, 
-  Edit, 
-  Plus,
-  Check
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/client";
 import type { SubscriptionPlan } from "@/lib/types";
+import {
+  Check,
+  CreditCard,
+  DollarSign,
+  Edit,
+  Plus
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function SubscriptionsManagement() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -78,7 +78,7 @@ export default function SubscriptionsManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between py-4">
         <div>
           <h2 className="text-2xl font-bold">Subscription Plans</h2>
           <p className="text-muted-foreground">
