@@ -4,7 +4,7 @@ import { extractSubdomain } from '@/lib/organizations/subdomain';
 import { createClient } from '@/lib/supabase/client';
 import { isSuperadmin } from '@/lib/superadmin';
 import type { Organization, OrganizationRole } from '@/lib/types';
-import { LayoutDashboard, Settings, ShieldUser } from 'lucide-react';
+import { LayoutDashboard, ShieldUser } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AppSidebar, type SidebarData } from './app-sidebar';
@@ -95,6 +95,7 @@ export function ClientAppHeader() {
       name: userName || 'User',
       email: userEmail || '',
       avatar: userAvatarUrl || '',
+      items: []
     };
     const teams = [] as NavTeam[]
     const projects = [] as NavProject[]
@@ -175,23 +176,16 @@ export function ClientAppHeader() {
     }
 
     // Settings section (personal)
-    navMain.push({
-      title: 'Settings',
-      url: '/settings',
-      icon: Settings,
-      isActive: pathname?.startsWith('/settings'),
-      items: [
-        {
-          title: 'Profile',
-          url: '/settings',
-        },
-        {
-          title: 'Connections',
-          url: '/settings/connections',
-
-        },
-      ],
-    });
+    user.items!.push(
+      {
+        title: 'Profile',
+        url: '/settings',
+      },
+      {
+        title: 'Connections',
+        url: '/settings/connections',
+      }
+    );
 
 
     return { user, teams, navMain, projects };

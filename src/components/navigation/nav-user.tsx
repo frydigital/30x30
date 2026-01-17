@@ -27,13 +27,15 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import Link from 'next/link';
+import { NavItem } from './nav-main';
 
 export type NavUser = {
   name: string
   email?: string
   avatar?: string
+  items?: NavItem[]
 }
-
 
 export function NavUser({
   user,
@@ -98,6 +100,15 @@ export function NavUser({
                 </div>
               </div>
             </DropdownMenuLabel>
+            {user.items && (
+              user.items?.map((Item) => (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={Item.url}>{Item.title}</Link>
+                  </DropdownMenuItem>
+                </>
+              ))
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
               <LogOut />
