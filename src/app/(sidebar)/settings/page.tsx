@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { ClientAppHeader } from '@/components/navigation/client-app-header';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, User, Settings as SettingsIcon } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { Loader2, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -79,23 +78,17 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <ClientAppHeader />
+
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <ClientAppHeader />
-
-      <main className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
-        <div className="flex items-center gap-3">
-          <SettingsIcon className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-bold">Settings</h1>
+    <>     
+        <div className="flex items-center gap-3 py-4">
+          <h1 className="text-2xl font-semibold">Settings</h1>
         </div>
 
         {message && (
@@ -159,7 +152,7 @@ export default function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      
+    </>
   );
 }

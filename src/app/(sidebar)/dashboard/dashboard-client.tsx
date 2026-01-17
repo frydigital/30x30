@@ -1,6 +1,5 @@
 "use client";
 
-import { AppPageHeader } from "@/components/navigation/app-pageheader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, DailyActivity, Profile, Streak } from "@/lib/types";
@@ -90,8 +89,8 @@ export default function DashboardClient({
 
   return (
     <>
-      <AppPageHeader />
-      {message && (
+        
+            {message && (
         <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>
           {message.text}
         </div>

@@ -72,16 +72,16 @@ export function NavMain({
               </SidebarMenuItem>
             </Collapsible>
           ) : (
-            <>
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <Link href={item.url}>
-                    {item.icon && <item.icon />}
-                    <span className={item.isActive ? `font-semibold` : ``}>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </>
+
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild>
+                <Link href={item.url}>
+                  {item.icon && <item.icon />}
+                  <span className={item.isActive ? `font-semibold` : ``}>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
           )
         ))}
       </SidebarMenu>

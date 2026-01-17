@@ -1,8 +1,7 @@
-import { AppPageHeader } from "@/components/navigation/app-pageheader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getPlatformStatistics, isSuperadmin } from "@/lib/superadmin";
-import { Activity, Building2, Crown, TrendingUp, Users } from "lucide-react";
+import { Activity, Building2, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -40,14 +39,6 @@ export default async function SuperadminDashboard() {
 
   return (
     <>
-    <AppPageHeader/>
-        {/* Page Title */}
-        <div className="flex items-center gap-3">
-          <Crown className="w-8 h-8 text-yellow-500" />
-          <h1 className="text-3xl font-bold">Superadmin Dashboard</h1>
-        </div>
-
-        {/* Platform Statistics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

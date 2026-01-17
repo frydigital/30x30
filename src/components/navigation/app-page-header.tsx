@@ -6,10 +6,12 @@ import {
     SidebarTrigger
 } from "@/components/ui/sidebar"
 import { useNavigation } from '@/lib/navigation'
+import { Fragment } from 'react'
 
 export function AppPageHeader() {
     const { getBreadcrumbs } = useNavigation()
-    
+
+
     return (
         <div className="inline-flex items-center">
             <SidebarTrigger className="-ml-1" />
@@ -19,20 +21,20 @@ export function AppPageHeader() {
             />
             <Breadcrumb>
                 <BreadcrumbList>
-                    {getBreadcrumbs().map(crumb => (
-                        <>
-                            <BreadcrumbItem className="hidden md:block" key={crumb.url}>
+                    {getBreadcrumbs().map((crumb, index) => (
+                        <Fragment key={index}>
+                            <BreadcrumbItem className="hidden md:block">
                                 <BreadcrumbLink href={crumb.url}>
                                     {crumb.title}
                                 </BreadcrumbLink>
                             </BreadcrumbItem>
-                            <BreadcrumbSeparator className="hidden md:block" />
-                        </>
+                            {index < getBreadcrumbs().length - 1 && (
+                                <BreadcrumbSeparator className="hidden md:block" />
+                            )}
+                        </Fragment>
                     ))}
                 </BreadcrumbList>
             </Breadcrumb>
-
-
         </div>
     )
 }

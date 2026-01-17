@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
-import { Loader2, Building2, AlertCircle } from "lucide-react";
-import { 
-  createOrganization, 
-  validateOrganizationSlug, 
-  generateSlugFromName 
+import {
+  createOrganization,
+  generateSlugFromName,
+  validateOrganizationSlug
 } from "@/lib/organizations";
 import { buildOrganizationUrl } from "@/lib/organizations/subdomain";
+import { createClient } from "@/lib/supabase/client";
+import { AlertCircle, Building2, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CreateOrganizationPage() {
   const router = useRouter();
@@ -122,7 +122,13 @@ export default function CreateOrganizationPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+  <>
+  <div className="flex items-center gap-3 py-4">
+        <h1 className="text-3xl font-bold">Create Challenge</h1>
+  
+      </div>
+    
+  
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -245,6 +251,6 @@ export default function CreateOrganizationPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

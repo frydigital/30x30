@@ -1,4 +1,3 @@
-import { AppPageHeader } from "@/components/navigation/app-pageheader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
@@ -13,17 +12,17 @@ export default async function OrganizationLeaderboardPage({
 }) {
   const supabase = await createClient();
   const params = await searchParams;
-  
+
   // Check authentication
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
+
   if (authError || !user) {
     redirect("/login");
   }
 
   // Get organization slug from query param (for development) or header (for subdomain)
   const orgSlug = params.org as string | undefined;
-  
+
   if (!orgSlug) {
     redirect("/dashboard");
   }
@@ -63,97 +62,88 @@ export default async function OrganizationLeaderboardPage({
 
   return (
     <>
-      <AppPageHeader/>
-      
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">
-            {organization.name} Leaderboard
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Track your team&apos;s progress in the 30x30 Challenge
-          </p>
-        </div>
+      <div className="flex items-center gap-3 py-4">
+        <h1 className="text-3xl font-bold">{organization?.name} Leaderboard</h1>
+      </div>
 
-        {leaderboard && leaderboard.length > 0 ? (
-          <div className="grid gap-4">
-            {leaderboard.map((entry, index) => (
-              <Card key={entry.user_id} className={index < 3 ? "border-primary/50" : ""}>
-                <CardContent className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12">
-                      {index === 0 && (
-                        <div className="text-3xl">🥇</div>
-                      )}
-                      {index === 1 && (
-                        <div className="text-3xl">🥈</div>
-                      )}
-                      {index === 2 && (
-                        <div className="text-3xl">🥉</div>
-                      )}
-                      {index > 2 && (
-                        <div className="text-2xl font-bold text-muted-foreground">
-                          #{index + 1}
-                        </div>
-                      )}
-                    </div>
-
-                    <Avatar className="w-12 h-12">
-                      <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-                        {(entry.username || "?").charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div>
-                      <p className="font-semibold text-lg">
-                        {entry.username || "Anonymous"}
-                      </p>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {entry.member_role}
-                      </p>
-                    </div>
+      {leaderboard && leaderboard.length > 0 ? (
+        <div className="grid gap-4">
+          {leaderboard.map((entry, index) => (
+            <Card key={entry.user_id} className={index < 3 ? "border-primary/50" : ""}>
+              <CardContent className="flex items-center justify-between p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-12 h-12">
+                    {index === 0 && (
+                      <div className="text-3xl">🥇</div>
+                    )}
+                    {index === 1 && (
+                      <div className="text-3xl">🥈</div>
+                    )}
+                    {index === 2 && (
+                      <div className="text-3xl">🥉</div>
+                    )}
+                    {index > 2 && (
+                      <div className="text-2xl font-bold text-muted-foreground">
+                        #{index + 1}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-orange-500 mb-1">
-                        <Flame className="w-5 h-5" />
-                        <span className="text-2xl font-bold">{entry.current_streak}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Current Streak</p>
-                    </div>
+                  <Avatar className="w-12 h-12">
+                    <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                      {(entry.username || "?").charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
-                        <Trophy className="w-5 h-5" />
-                        <span className="text-2xl font-bold">{entry.longest_streak}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Best Streak</p>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-green-500 mb-1">
-                        <Calendar className="w-5 h-5" />
-                        <span className="text-2xl font-bold">{entry.total_valid_days}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Total Days</p>
-                    </div>
+                  <div>
+                    <p className="font-semibold text-lg">
+                      {entry.username || "Anonymous"}
+                    </p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {entry.member_role}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>No Activity Yet</CardTitle>
-              <CardDescription>
-                Be the first to log activities and start your streak!
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+                </div>
+
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-orange-500 mb-1">
+                      <Flame className="w-5 h-5" />
+                      <span className="text-2xl font-bold">{entry.current_streak}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Current Streak</p>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
+                      <Trophy className="w-5 h-5" />
+                      <span className="text-2xl font-bold">{entry.longest_streak}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Best Streak</p>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-green-500 mb-1">
+                      <Calendar className="w-5 h-5" />
+                      <span className="text-2xl font-bold">{entry.total_valid_days}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Total Days</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>No Activity Yet</CardTitle>
+            <CardDescription>
+              Be the first to log activities and start your streak!
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+    </>
   );
 }

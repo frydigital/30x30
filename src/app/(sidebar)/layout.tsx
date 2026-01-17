@@ -1,3 +1,4 @@
+import { AppPageHeader } from "@/components/navigation/app-page-header";
 import { AppSidebar } from "@/components/navigation/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { NavDataProvider } from "@/lib/navigation/context";
@@ -15,7 +16,8 @@ export default function SuperadminLayout({
       <NavDataProvider>
         <AppSidebar />
         <SidebarInset>
-          <main>
+          <main className="px-6 py-2 grid">
+            <AppPageHeader/>
             {children}
           </main>
         </SidebarInset>

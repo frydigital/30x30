@@ -1,6 +1,5 @@
 "use client";
 
-import { ClientAppHeader } from "@/components/navigation/client-app-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -134,8 +133,10 @@ export default function ActivityClient({
 
 
   return (
-    <main>
-      <ClientAppHeader />
+    <>
+      <div className="flex items-center gap-3 py-4">
+        <h1 className="text-3xl font-bold">Record Activity</h1>
+      </div>
 
       {message && (
         <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>
@@ -143,166 +144,162 @@ export default function ActivityClient({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-
-        {/* Data Sources Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Data Sources</CardTitle>
-            <CardDescription>
-              Connect fitness platforms or add activities manually
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Strava Connection */}
-            <div className="border-b pb-4">
-              <h3 className="font-medium mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-                </svg>
-                Strava
-              </h3>
-              {stravaConnected ? (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <Link2 className="w-5 h-5" />
-                    <span>Connected</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSyncStrava} disabled={syncing}>
-                      {syncing ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                      )}
-                      Sync
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleDisconnectStrava}
-                      disabled={disconnecting}
-                    >
-                      {disconnecting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Link2Off className="w-4 h-4 mr-2" />
-                      )}
-                      Disconnect
-                    </Button>
-                  </div>
+      {/* Data Sources Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Sources</CardTitle>
+          <CardDescription>
+            Connect fitness platforms or add activities manually
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Strava Connection */}
+          <div className="border-b pb-4">
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+              Strava
+            </h3>
+            {stravaConnected ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2 text-green-600">
+                  <Link2 className="w-5 h-5" />
+                  <span>Connected</span>
                 </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <X className="w-5 h-5" />
-                    <span>Not connected</span>
-                  </div>
-                  <Button size="sm" asChild disabled={!stravaConfigured}>
-                    <a href="/api/strava/connect">
-                      <Link2 className="w-4 h-4 mr-2" />
-                      Connect Strava
-                    </a>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSyncStrava} disabled={syncing}>
+                    {syncing ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Sync
                   </Button>
-                  {!stravaConfigured && (
-                    <p className="text-xs text-muted-foreground">
-                      Strava API credentials not configured
-                    </p>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleDisconnectStrava}
+                    disabled={disconnecting}
+                  >
+                    {disconnecting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Link2Off className="w-4 h-4 mr-2" />
+                    )}
+                    Disconnect
+                  </Button>
                 </div>
-              )}
-            </div>
-
-            {/* Manual Entry */}
-            <div>
-              <h3 className="font-medium mb-3 flex items-center gap-2">
-                <Edit3 className="w-5 h-5" />
-                Manual Entry
-              </h3>
-              {!showManualEntry ? (
-                <Button size="sm" onClick={() => setShowManualEntry(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Activity Manually
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <X className="w-5 h-5" />
+                  <span>Not connected</span>
+                </div>
+                <Button size="sm" asChild disabled={!stravaConfigured}>
+                  <a href="/api/strava/connect">
+                    <Link2 className="w-4 h-4 mr-2" />
+                    Connect Strava
+                  </a>
                 </Button>
-              ) : (
-                <form onSubmit={handleAddManualActivity} className="space-y-4 max-w-md">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="manualDate">Date</Label>
-                      <Input
-                        id="manualDate"
-                        type="date"
-                        value={manualDate}
-                        onChange={(e) => setManualDate(e.target.value)}
-                        max={new Date().toISOString().split("T")[0]}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="manualDuration">Duration (minutes)</Label>
-                      <Input
-                        id="manualDuration"
-                        type="number"
-                        placeholder="30"
-                        value={manualDuration}
-                        onChange={(e) => setManualDuration(e.target.value)}
-                        min="1"
-                        max="1440"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="manualType">Activity Type</Label>
-                      <select
-                        id="manualType"
-                        value={manualType}
-                        onChange={(e) => setManualType(e.target.value)}
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      >
-                        {activityTypes.map((type) => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="manualName">Activity Name</Label>
-                      <Input
-                        id="manualName"
-                        type="text"
-                        placeholder="Morning run"
-                        value={manualName}
-                        onChange={(e) => setManualName(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                {!stravaConfigured && (
+                  <p className="text-xs text-muted-foreground">
+                    Strava API credentials not configured
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Manual Entry */}
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <Edit3 className="w-5 h-5" />
+              Manual Entry
+            </h3>
+            {!showManualEntry ? (
+              <Button size="sm" onClick={() => setShowManualEntry(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Activity Manually
+              </Button>
+            ) : (
+              <form onSubmit={handleAddManualActivity} className="space-y-4 max-w-md">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="manualNotes">Notes (optional)</Label>
+                    <Label htmlFor="manualDate">Date</Label>
                     <Input
-                      id="manualNotes"
-                      type="text"
-                      placeholder="Add any notes..."
-                      value={manualNotes}
-                      onChange={(e) => setManualNotes(e.target.value)}
+                      id="manualDate"
+                      type="date"
+                      value={manualDate}
+                      onChange={(e) => setManualDate(e.target.value)}
+                      max={new Date().toISOString().split("T")[0]}
+                      required
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={addingManual || !manualDuration}>
-                      {addingManual && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Add Activity
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => setShowManualEntry(false)}>
-                      Cancel
-                    </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="manualDuration">Duration (minutes)</Label>
+                    <Input
+                      id="manualDuration"
+                      type="number"
+                      placeholder="30"
+                      value={manualDuration}
+                      onChange={(e) => setManualDuration(e.target.value)}
+                      min="1"
+                      max="1440"
+                      required
+                    />
                   </div>
-                </form>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </main>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="manualType">Activity Type</Label>
+                    <select
+                      id="manualType"
+                      value={manualType}
+                      onChange={(e) => setManualType(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {activityTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manualName">Activity Name</Label>
+                    <Input
+                      id="manualName"
+                      type="text"
+                      placeholder="Morning run"
+                      value={manualName}
+                      onChange={(e) => setManualName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manualNotes">Notes (optional)</Label>
+                  <Input
+                    id="manualNotes"
+                    type="text"
+                    placeholder="Add any notes..."
+                    value={manualNotes}
+                    onChange={(e) => setManualNotes(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={addingManual || !manualDuration}>
+                    {addingManual && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Add Activity
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowManualEntry(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </>
   )
 }

@@ -48,9 +48,16 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [isSuper, setIsSuper] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const loadNavigationData = async () => {
       const supabase = createClient();
 
@@ -113,7 +120,7 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     };
 
     loadNavigationData();
-  }, []);
+  }, [mounted]);
 
   // Generate navigation data based on context and permissions
   const navigationData = useMemo(() => {
@@ -266,6 +273,11 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     isPathActive,
     getBreadcrumbs,
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <NavigationContext.Provider value={value}>

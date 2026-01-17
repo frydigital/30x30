@@ -1,23 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Building2, Users, Settings, Mail, UserX, Shield } from "lucide-react";
-import { ClientAppHeader } from "@/components/navigation/client-app-header";
-import { 
-  getOrganizationMembers, 
-  createOrganizationInvitation, 
-  updateMemberRole, 
+import {
+  createOrganizationInvitation,
+  getOrganizationBySlug,
+  getOrganizationMembers,
   removeOrganizationMember,
-  getOrganizationBySlug
+  updateMemberRole
 } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
-import type { OrganizationMember, Organization, OrganizationRole } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+import type { Organization, OrganizationMember, OrganizationRole } from "@/lib/types";
+import { Loader2, Mail, Settings, Shield, Users, UserX } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function OrganizationAdminPage() {
   const router = useRouter();
@@ -35,7 +34,7 @@ export default function OrganizationAdminPage() {
   useEffect(() => {
     const loadData = async () => {
       const supabase = createClient();
-      
+
       try {
         // Check auth
         const { data: { user } } = await supabase.auth.getUser();
@@ -47,7 +46,7 @@ export default function OrganizationAdminPage() {
         // Get organization slug from subdomain
         const hostname = window.location.hostname;
         const slug = extractSubdomain(hostname) || new URLSearchParams(window.location.search).get('org');
-        
+
         if (!slug) {
           setError('No organization context found');
           setLoading(false);
@@ -58,7 +57,7 @@ export default function OrganizationAdminPage() {
         const { data: org, error: orgError } = await getOrganizationBySlug(supabase, slug);
         if (orgError) throw orgError;
         if (!org) throw new Error('Organization not found');
-        
+
         setOrganization(org);
 
         // Check user's role
@@ -80,7 +79,7 @@ export default function OrganizationAdminPage() {
         // Load members
         const { data: membersData, error: membersError } = await getOrganizationMembers(supabase, org.id);
         if (membersError) throw membersError;
-        
+
         setMembers(membersData || []);
       } catch (err) {
         console.error('Error loading data:', err);
@@ -119,7 +118,7 @@ export default function OrganizationAdminPage() {
       // Build invitation URL using environment variable or fallback
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const inviteUrl = `${baseUrl}/join?token=${invitation?.token}`;
-      
+
       setSuccess(`Invitation sent! Share this link: ${inviteUrl}`);
       setInviteEmail('');
       setInviteRole('member');
@@ -140,7 +139,7 @@ export default function OrganizationAdminPage() {
     if (!organization) return;
 
     const supabase = createClient();
-    
+
     try {
       const { error } = await updateMemberRole(supabase, memberId, newRole);
       if (error) throw error;
@@ -161,7 +160,7 @@ export default function OrganizationAdminPage() {
     if (!confirm('Are you sure you want to remove this member?')) return;
 
     const supabase = createClient();
-    
+
     try {
       const { error } = await removeOrganizationMember(supabase, memberId);
       if (error) throw error;
@@ -204,175 +203,168 @@ export default function OrganizationAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <ClientAppHeader />
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold">{organization?.name}</h1>
-              <p className="text-muted-foreground">Organization Administration</p>
-            </div>
-          </div>
+    <>
+
+      <div className="flex items-center gap-3 py-4">
+        <h1 className="text-3xl font-bold">{organization?.name}</h1>
+        <p className="text-muted-foreground">Organization Administration</p>
+      </div>
+
+      {error && (
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
+          {error}
         </div>
+      )}
 
-        {error && (
-          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
-            {error}
+      {success && (
+        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400">
+          {success}
+        </div>
+      )}
+
+      {/* Invite Member Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            <CardTitle>Invite Members</CardTitle>
           </div>
-        )}
-
-        {success && (
-          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400">
-            {success}
-          </div>
-        )}
-
-        {/* Invite Member Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-              <CardTitle>Invite Members</CardTitle>
+          <CardDescription>
+            Send invitations to new members to join your organization
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleInvite} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="inviteEmail">Email Address</Label>
+                <Input
+                  id="inviteEmail"
+                  type="email"
+                  placeholder="member@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                  disabled={inviting}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="inviteRole">Role</Label>
+                <select
+                  id="inviteRole"
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value as OrganizationRole)}
+                  disabled={inviting}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                  {userRole === 'owner' && <option value="owner">Owner</option>}
+                </select>
+              </div>
             </div>
-            <CardDescription>
-              Send invitations to new members to join your organization
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleInvite} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="inviteEmail">Email Address</Label>
-                  <Input
-                    id="inviteEmail"
-                    type="email"
-                    placeholder="member@example.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    required
-                    disabled={inviting}
-                  />
+            <Button type="submit" disabled={inviting || !inviteEmail}>
+              {inviting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending invitation...
+                </>
+              ) : (
+                'Send Invitation'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Members List */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            <CardTitle>Members ({members.length})</CardTitle>
+          </div>
+          <CardDescription>
+            Manage your organization members and their roles
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 rounded-lg border bg-card"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      {member.profile?.username || member.profile?.email || 'Unknown'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {member.profile?.email}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="inviteRole">Role</Label>
+                <div className="flex items-center gap-2">
                   <select
-                    id="inviteRole"
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as OrganizationRole)}
-                    disabled={inviting}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={member.role}
+                    onChange={(e) => handleUpdateRole(member.id, e.target.value as OrganizationRole)}
+                    disabled={member.role === 'owner' && userRole !== 'owner'}
+                    className="h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <option value="member">Member</option>
                     <option value="admin">Admin</option>
                     {userRole === 'owner' && <option value="owner">Owner</option>}
                   </select>
-                </div>
-              </div>
-              <Button type="submit" disabled={inviting || !inviteEmail}>
-                {inviting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending invitation...
-                  </>
-                ) : (
-                  'Send Invitation'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Members List */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              <CardTitle>Members ({members.length})</CardTitle>
-            </div>
-            <CardDescription>
-              Manage your organization members and their roles
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {member.profile?.username || member.profile?.email || 'Unknown'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.profile?.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={member.role}
-                      onChange={(e) => handleUpdateRole(member.id, e.target.value as OrganizationRole)}
-                      disabled={member.role === 'owner' && userRole !== 'owner'}
-                      className="h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  {member.role !== 'owner' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveMember(member.id)}
                     >
-                      <option value="member">Member</option>
-                      <option value="admin">Admin</option>
-                      {userRole === 'owner' && <option value="owner">Owner</option>}
-                    </select>
-                    {member.role !== 'owner' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveMember(member.id)}
-                      >
-                        <UserX className="w-4 h-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
+                      <UserX className="w-4 h-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Organization Settings */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              <CardTitle>Organization Settings</CardTitle>
+      {/* Organization Settings */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            <CardTitle>Organization Settings</CardTitle>
+          </div>
+          <CardDescription>
+            Manage your organization details
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Organization Name</Label>
+              <p className="text-sm font-medium">{organization?.name}</p>
             </div>
-            <CardDescription>
-              Manage your organization details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Organization Name</Label>
-                <p className="text-sm font-medium">{organization?.name}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Subdomain</Label>
-                <p className="text-sm font-medium">{organization?.slug}.30x30.app</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <p className="text-sm text-muted-foreground">
-                  {organization?.description || 'No description'}
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label>Subdomain</Label>
+              <p className="text-sm font-medium">{organization?.slug}.30x30.app</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <p className="text-sm text-muted-foreground">
+                {organization?.description || 'No description'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+</>
   );
 }
