@@ -152,6 +152,11 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
           },
         ],
       });
+      teams.push({
+        name: organization.name,
+        //logo: organization.avatar_url,
+        plan: organization.description || undefined
+      })
     } else {
       navMain.push({
         title: 'Dashboard',
@@ -217,6 +222,10 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
           },
         ],
       });
+      teams.push({
+        name: 'Superadmin',
+        plan: '30x30.app'
+      })
     }
 
     // Settings section (personal)
@@ -232,7 +241,7 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     );
 
     return { navMain, user, teams };
-  }, [organization?.slug, userRole, isSuper, pathname, userName, userEmail, userAvatarUrl]);
+  }, [organization, userRole, isSuper, pathname, userName, userEmail, userAvatarUrl]);
 
   // Helper functions
   const getActiveItem = () => {

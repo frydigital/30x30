@@ -18,9 +18,11 @@ export function AppSidebar() {
   return (   
       <Sidebar collapsible="icon">
         {(teams && teams[0]) && (
+          <>
           <SidebarHeader>
             <TeamSwitcher teams={teams} />
           </SidebarHeader>
+          </>
         )}
         <SidebarContent>
           {(navMain && navMain[0]) && (
