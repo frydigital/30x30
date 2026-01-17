@@ -120,10 +120,7 @@ ALTER TABLE daily_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaks ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles
-  FOR SELECT USING (is_public = true);
-
+-- Note: Profiles are only visible within organization context (see multi-tenancy-schema.sql)
 DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 CREATE POLICY "Users can view their own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
@@ -188,15 +185,10 @@ CREATE POLICY "Users can delete own activities" ON activities
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Daily activities policies
+-- Note: Daily activities visibility is scoped to organization membership (see multi-tenancy-schema.sql)
 DROP POLICY IF EXISTS "Users can view own daily activities" ON daily_activities;
 CREATE POLICY "Users can view own daily activities" ON daily_activities
   FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Public users daily activities viewable by everyone" ON daily_activities;
-CREATE POLICY "Public users daily activities viewable by everyone" ON daily_activities
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = daily_activities.user_id AND profiles.is_public = true)
-  );
 
 DROP POLICY IF EXISTS "Users can insert own daily activities" ON daily_activities;
 CREATE POLICY "Users can insert own daily activities" ON daily_activities
@@ -211,15 +203,10 @@ CREATE POLICY "Users can delete own daily activities" ON daily_activities
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Streaks policies
+-- Note: Streaks visibility is scoped to organization membership (see multi-tenancy-schema.sql)
 DROP POLICY IF EXISTS "Users can view own streaks" ON streaks;
 CREATE POLICY "Users can view own streaks" ON streaks
   FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Public users streaks viewable by everyone" ON streaks;
-CREATE POLICY "Public users streaks viewable by everyone" ON streaks
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = streaks.user_id AND profiles.is_public = true)
-  );
 
 DROP POLICY IF EXISTS "System can create streaks for new users" ON streaks;
 CREATE POLICY "System can create streaks for new users" ON streaks
@@ -316,16 +303,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create view for leaderboard
-CREATE OR REPLACE VIEW public_leaderboard AS
-SELECT 
-  p.id as user_id,
-  p.username,
-  p.avatar_url,
-  s.current_streak,
-  s.longest_streak,
-  (SELECT COUNT(*) FROM daily_activities da WHERE da.user_id = p.id AND da.is_valid = true)::INTEGER as total_valid_days
-FROM profiles p
-JOIN streaks s ON p.id = s.user_id
-WHERE p.is_public = true
-ORDER BY s.current_streak DESC, s.longest_streak DESC, total_valid_days DESC;
+-- Note: Organization-scoped leaderboard views are created in multi-tenancy-schema.sql
+-- Each organization has its own private leaderboard with no cross-organization visibility
+-- The 'is_public' field on profiles indicates if a user's profile is visible to other members
+-- within their organization, not globally across all organizations.
