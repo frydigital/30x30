@@ -1,27 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Building2, 
-  Users, 
-  Search, 
-  MoreVertical, 
-  Power, 
-  PowerOff,
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
+import type { OrganizationStatistics } from "@/lib/types";
+import {
+  Building2,
   ExternalLink,
+  Power,
+  PowerOff,
+  Search,
   Settings
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { OrganizationStatistics } from "@/lib/types";
+import { useEffect, useState } from "react";
 
 export default function OrganizationsManagement() {
-  const router = useRouter();
   const [organizations, setOrganizations] = useState<OrganizationStatistics[]>([]);
   const [filteredOrgs, setFilteredOrgs] = useState<OrganizationStatistics[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +46,7 @@ export default function OrganizationsManagement() {
 
   const loadOrganizations = async () => {
     const supabase = createClient();
-    
+
     try {
       setLoading(true);
       setError(null);
@@ -75,7 +71,7 @@ export default function OrganizationsManagement() {
 
   const handleToggleActive = async (orgId: string, currentStatus: boolean) => {
     const supabase = createClient();
-    
+
     try {
       const { error } = await supabase
         .from("organizations")
@@ -121,7 +117,7 @@ export default function OrganizationsManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between py-4">
         <div>
           <h2 className="text-2xl font-bold">Organizations</h2>
           <p className="text-muted-foreground">
@@ -130,20 +126,17 @@ export default function OrganizationsManagement() {
         </div>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or slug..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </CardContent>
-      </Card>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by name or slug..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
 
       {/* Organizations List */}
       {error && (
