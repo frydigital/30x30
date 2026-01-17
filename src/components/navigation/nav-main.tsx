@@ -16,6 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 export type NavItem = {
   title: string
@@ -72,14 +73,13 @@ export function NavMain({
             </Collapsible>
           ) : (
             <>
-              <SidebarMenuItem>
-
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
-                  <span className={item.isActive ? `font-semibold` : ``}>{item.title}</span>
-
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <Link href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span className={item.isActive ? `font-semibold` : ``}>{item.title}</span>
+                  </Link>
                 </SidebarMenuButton>
-
               </SidebarMenuItem>
             </>
           )

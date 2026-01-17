@@ -1,3 +1,4 @@
+import { AppPageHeader } from "@/components/navigation/app-pageheader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { getPlatformStatistics, isSuperadmin } from "@/lib/superadmin";
@@ -37,18 +38,9 @@ export default async function SuperadminDashboard() {
   // Get platform statistics
   const { data: stats } = await getPlatformStatistics(supabase);
 
-  // Get user profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, email")
-    .eq("id", user.id)
-    .single();
-
   return (
-    <div className="min-h-screen bg-background">
-      
-
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <>
+    <AppPageHeader/>
         {/* Page Title */}
         <div className="flex items-center gap-3">
           <Crown className="w-8 h-8 text-yellow-500" />
@@ -188,7 +180,6 @@ export default async function SuperadminDashboard() {
             </Link>
           </Card>
         </div>
-      </div>
-    </div>
+      </>
   );
 }

@@ -1,51 +1,38 @@
-import * as React from "react"
 
-import { NavMain, NavMainItem } from "@/components/navigation/nav-main"
-import { NavProject, NavProjects } from "@/components/navigation/nav-projects"
+'use client'
+import { NavMain } from "@/components/navigation/nav-main"
 import { NavUser } from "@/components/navigation/nav-user"
-import { NavTeam, TeamSwitcher } from "@/components/navigation/team-switcher"
+import { TeamSwitcher } from "@/components/navigation/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
+  SidebarRail
 } from "@/components/ui/sidebar"
+import { useNavigation } from '@/lib/navigation'
 
-export type SidebarData = {
-  user?: NavUser
-  teams?: NavTeam[]
-  navMain?: NavMainItem[]
-  projects?: NavProject[]
-}
-
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  data: SidebarData
-  organizationName?: string
-}
-
-export function AppSidebar({ data, ...props }: AppSidebarProps) {
-  return (
-    <Sidebar collapsible="icon" {...props}>
-      {(data.teams && data.teams[0]) && (
-        <SidebarHeader>
-          <TeamSwitcher teams={data.teams} />
-        </SidebarHeader>
-      )}
-      <SidebarContent>
-        {(data.navMain && data.navMain[0]) && (
-          <NavMain items={data.navMain} />
+export function AppSidebar() {
+  const { navMain, user, teams } = useNavigation()
+  
+  return (   
+      <Sidebar collapsible="icon">
+        {(teams && teams[0]) && (
+          <SidebarHeader>
+            <TeamSwitcher teams={teams} />
+          </SidebarHeader>
         )}
-        {(data.projects && data.projects[0]) && (
-          <NavProjects projects={data.projects} />
+        <SidebarContent>
+          {(navMain && navMain[0]) && (
+            <NavMain items={navMain} />
+          )}
+        </SidebarContent>
+        {user && (
+          <SidebarFooter>
+            <NavUser user={user} />
+          </SidebarFooter>
         )}
-      </SidebarContent>
-      {data.user && (
-        <SidebarFooter>
-          <NavUser user={data.user} />
-        </SidebarFooter>
-      )}
-      <SidebarRail />
-    </Sidebar>
+        <SidebarRail />
+      </Sidebar>
   )
 }

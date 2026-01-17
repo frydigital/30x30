@@ -23,6 +23,7 @@ export type NavTeam = {
   name: string
   logo?: LucideIcon
   plan?: string
+  isActive?: boolean
 }
 
 export function TeamSwitcher({

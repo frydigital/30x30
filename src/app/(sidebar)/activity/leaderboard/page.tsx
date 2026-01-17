@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppPageHeader } from "@/components/navigation/app-pageheader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Flame, Trophy, Calendar } from "lucide-react";
-import { AppHeader } from "@/components/navigation/app-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/server";
 import type { OrganizationLeaderboardEntry } from "@/lib/types";
+import { Calendar, Flame, Trophy } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export default async function OrganizationLeaderboardPage({
   searchParams,
@@ -52,13 +52,6 @@ export default async function OrganizationLeaderboardPage({
     redirect("/dashboard");
   }
 
-  // Get user profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, email")
-    .eq("id", user.id)
-    .single();
-
   // Get organization leaderboard
   const { data: leaderboard } = await supabase
     .from("organization_leaderboard")
@@ -69,14 +62,8 @@ export default async function OrganizationLeaderboardPage({
     .order("total_valid_days", { ascending: false }) as { data: OrganizationLeaderboardEntry[] | null };
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader 
-        organizationSlug={orgSlug}
-        organizationName={organization.name}
-        userRole={membership.role}
-        userName={profile?.username || undefined}
-        userEmail={profile?.email || user.email || undefined}
-      />
+    <>
+      <AppPageHeader/>
       
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="text-center space-y-2">
@@ -166,7 +153,7 @@ export default async function OrganizationLeaderboardPage({
             </CardHeader>
           </Card>
         )}
-      </div>
-    </div>
+        </div>
+      </>
   );
 }
