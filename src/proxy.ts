@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
 import { extractSubdomain, isRootDomain } from "@/lib/organizations/subdomain";
+import { updateSession } from "@/lib/supabase/proxy";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
   // Get the hostname
