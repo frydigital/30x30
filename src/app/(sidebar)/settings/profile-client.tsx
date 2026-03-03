@@ -51,16 +51,7 @@ export default function ProfileClient({
 
   return (
     <>
-      <div className="flex items-center gap-3 py-4">
-        <h1 className="text-2xl font-semibold">Profile Settings</h1>
-      </div>
-
-      {message && (
-        <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>
-          {message.text}
-        </div>
-      )}
-
+    
       {/* Profile Settings */}
       <Card>
         <CardHeader>
@@ -117,6 +108,11 @@ export default function ProfileClient({
             Save Changes
           </Button>
         </CardContent>
+        {message && (
+        <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"}`}>
+          {message.text}
+        </div>
+      )}
       </Card>
     </>
   );
