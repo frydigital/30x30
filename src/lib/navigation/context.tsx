@@ -144,11 +144,11 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
         items: [
           {
             title: 'Leaderboard',
-            url: `/leaderboard?org=${orgSlug}`,
+            url: `/dashboard/leaderboard?org=${orgSlug}`,
           },
           {
             title: 'My Activity',
-            url: `/activity?org=${orgSlug}`,
+            url: `/dashboard/activity?org=${orgSlug}`,
           },
         ],
       });
