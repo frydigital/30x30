@@ -69,6 +69,12 @@ export async function proxy(request: NextRequest) {
       
       return NextResponse.redirect(rootUrl);
     }
+
+    // On the org subdomain root path, redirect to the join/splash page
+    if (url.pathname === '/') {
+      url.pathname = '/join';
+      return NextResponse.redirect(url);
+    }
   }
   
   return response;

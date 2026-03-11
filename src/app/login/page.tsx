@@ -25,13 +25,32 @@ export default function LoginPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      window.location.href = "/dashboard";
+    } else if (data.user) {
+      // After login, redirect to user's organization if they have one
+      const { data: memberships } = await supabase
+        .from("organization_members")
+        .select("organizations(slug)")
+        .eq("user_id", data.user.id)
+        .limit(1);
+
+      const firstOrg = (memberships?.[0]?.organizations as { slug: string } | { slug: string }[] | null | undefined);
+      const slug = firstOrg && !Array.isArray(firstOrg) ? firstOrg.slug : Array.isArray(firstOrg) ? firstOrg[0]?.slug : null;
+      if (slug) {
+        const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+        if (baseDomain && !appUrl.includes("localhost")) {
+          window.location.href = `https://${slug}.${baseDomain}/dashboard`;
+        } else {
+          window.location.href = `/dashboard?org=${slug}`;
+        }
+      } else {
+        window.location.href = "/dashboard";
+      }
     }
   };
 

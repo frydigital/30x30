@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-function buildOrganizationJoinUrl(slug: string): string {
+function buildOrganizationUrl(slug: string): string {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -169,8 +169,8 @@ export default async function Home() {
                         Open
                       </Badge>
                       <Button asChild size="sm">
-                        <Link href={buildOrganizationJoinUrl(challenge.slug)}>
-                          Join
+                        <Link href={buildOrganizationUrl(challenge.slug)}>
+                          View Challenge
                         </Link>
                       </Button>
                     </div>
