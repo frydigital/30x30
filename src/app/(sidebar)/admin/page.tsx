@@ -345,8 +345,8 @@ export default function OrganizationAdminPage() {
             <div className="text-center space-y-4">
               <Shield className="w-12 h-12 mx-auto text-destructive" />
               <p className="text-destructive">{error}</p>
-              <Button onClick={() => router.push('/dashboard')} variant="outline">
-                Go to Dashboard
+              <Button onClick={() => router.push('/')} variant="outline">
+                Go to Home
               </Button>
             </div>
           </CardContent>

@@ -49,7 +49,7 @@ export default function LoginPage() {
           window.location.href = `/dashboard?org=${slug}`;
         }
       } else {
-        window.location.href = "/dashboard";
+        window.location.href = "/create-organization";
       }
     }
   };

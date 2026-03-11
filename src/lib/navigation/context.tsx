@@ -152,28 +152,27 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
         name: organization.name,
         plan: organization.description || undefined
       })
-    } else {
+    }
+
+    // Record Activity is only meaningful in an org context
+    if (orgSlug) {
       navMain.push({
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutDashboard,
-        isActive: pathname === '/dashboard',
+        title: 'Record Activity',
+        url: `/activity/record?org=${orgSlug}`,
+        icon: PlusCircle,
+        isActive: pathname === '/activity/record',
       });
     }
 
-    navMain.push({
-      title: 'Record Activity',
-      url: '/activity/record',
-      icon: PlusCircle,
-      isActive: pathname === '/activity/record',
-    });
-
-    navMain.push({
-      title: 'Create Challenge',
-      url: '/create-organization',
-      icon: Origami,
-      isActive: pathname === '/create-organization',
-    });
+    // Create Challenge is only meaningful on the root domain (no org context)
+    if (!orgSlug) {
+      navMain.push({
+        title: 'Create Challenge',
+        url: '/create-organization',
+        icon: Origami,
+        isActive: pathname === '/create-organization',
+      });
+    }
 
     // Organization Admin section (admin and owner only)
     if (orgSlug && (userRole === 'admin' || userRole === 'owner')) {

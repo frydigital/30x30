@@ -65,6 +65,21 @@ export function buildOrganizationUrl(slug: string): string {
 }
 
 /**
+ * Build organization dashboard URL — handles both subdomain (production) and
+ * query-param (development) routing patterns.
+ */
+export function buildOrganizationDashboardUrl(slug: string): string {
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || '30x30.app';
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+
+  if (process.env.NODE_ENV === 'development') {
+    return `${protocol}://localhost:3000/dashboard?org=${slug}`;
+  }
+
+  return `${protocol}://${slug}.${baseDomain}/dashboard`;
+}
+
+/**
  * Build root/main domain URL
  */
 export function buildRootUrl(): string {

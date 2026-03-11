@@ -31,7 +31,7 @@ export default async function SuperadminDashboard() {
     console.log('Superadmin check failed for user:', user.id);
     console.log('Superadmin table entry:', superadminCheck);
     
-    redirect("/dashboard?error=unauthorized");
+    redirect("/?error=unauthorized");
   }
 
   // Get platform statistics

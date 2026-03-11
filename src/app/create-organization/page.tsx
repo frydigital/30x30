@@ -12,7 +12,7 @@ import {
   generateSlugFromName,
   validateOrganizationSlug,
 } from "@/lib/organizations";
-import { buildOrganizationUrl } from "@/lib/organizations/subdomain";
+import { buildOrganizationDashboardUrl } from "@/lib/organizations/subdomain";
 import { createClient } from "@/lib/supabase/client";
 
 type Step = "loading" | "signup" | "check-email" | "create-org";
@@ -208,8 +208,7 @@ export default function CreateOrganizationPage() {
       if (createError) throw createError;
       if (!organization) throw new Error("Failed to create organization");
 
-      const orgUrl = buildOrganizationUrl(organization.slug);
-      window.location.href = `${orgUrl}/dashboard`;
+      window.location.href = buildOrganizationDashboardUrl(organization.slug);
     } catch (err) {
       const e = err as { message?: string; code?: string };
       if (e.message?.includes("duplicate") || e.code === "23505") {
@@ -305,7 +304,7 @@ export default function CreateOrganizationPage() {
                 </Button>
 
                 <Button type="button" variant="outline" className="w-full" asChild>
-                  <Link href="/dashboard">Cancel</Link>
+                  <Link href="/">Cancel</Link>
                 </Button>
 
                 <p className="text-sm text-muted-foreground text-center">
