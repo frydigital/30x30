@@ -681,6 +681,7 @@ SELECT
   p.username,
   p.avatar_url,
   p.organization_id,
+  p.is_public,
   om.role as member_role,
   s.current_streak,
   s.longest_streak,
@@ -698,6 +699,7 @@ LEFT JOIN (
   GROUP BY user_id, organization_id
 ) da_counts ON p.id = da_counts.user_id AND p.organization_id = da_counts.organization_id
 WHERE p.organization_id IS NOT NULL
+  AND p.is_public = true
 ORDER BY p.organization_id, s.current_streak DESC, s.longest_streak DESC, total_valid_days DESC;
 
 -- Grant necessary permissions
