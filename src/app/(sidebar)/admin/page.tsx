@@ -4,19 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   createOrganizationInvitation,
   getOrganizationBySlug,
   getOrganizationMembers,
   removeOrganizationMember,
-  updateMemberRole
+  updateMemberRole,
+  updateOrganization,
 } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 import { createClient } from "@/lib/supabase/client";
 import type { Organization, OrganizationMember, OrganizationRole } from "@/lib/types";
-import { Loader2, Mail, Settings, Shield, Users, UserX } from "lucide-react";
+import { CalendarDays, Loader2, Mail, Settings, Shield, Users, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const ACTIVITY_TYPE_OPTIONS = [
+  { value: "running", label: "Running" },
+  { value: "cycling", label: "Cycling" },
+  { value: "swimming", label: "Swimming" },
+  { value: "walking", label: "Walking" },
+  { value: "hiking", label: "Hiking" },
+  { value: "gym", label: "Gym / Strength Training" },
+  { value: "yoga", label: "Yoga" },
+  { value: "sports", label: "Sports" },
+  { value: "any", label: "Any Activity" },
+];
 
 export default function OrganizationAdminPage() {
   const router = useRouter();
@@ -29,6 +43,15 @@ export default function OrganizationAdminPage() {
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Challenge settings state
+  const [challengeStartDate, setChallengeStartDate] = useState("");
+  const [challengeEndDate, setChallengeEndDate] = useState("");
+  const [allowedActivityTypes, setAllowedActivityTypes] = useState<string[]>(["any"]);
+  const [termsOfUse, setTermsOfUse] = useState("");
+  const [publicSignup, setPublicSignup] = useState(true);
+  const [homepageContent, setHomepageContent] = useState("");
+  const [savingChallenge, setSavingChallenge] = useState(false);
 
   // Load organization and check permissions
   useEffect(() => {
@@ -59,6 +82,14 @@ export default function OrganizationAdminPage() {
         if (!org) throw new Error('Organization not found');
 
         setOrganization(org);
+
+        // Populate challenge settings from loaded org
+        setChallengeStartDate(org.challenge_start_date ?? "");
+        setChallengeEndDate(org.challenge_end_date ?? "");
+        setAllowedActivityTypes((org.allowed_activity_types?.length ?? 0) > 0 ? org.allowed_activity_types! : ["any"]);
+        setTermsOfUse(org.terms_of_use ?? "");
+        setPublicSignup(org.public_signup !== false);
+        setHomepageContent(org.homepage_content ?? "");
 
         // Check user's role
         const { data: member } = await supabase
@@ -176,6 +207,57 @@ export default function OrganizationAdminPage() {
     }
   };
 
+  const toggleActivityType = (value: string) => {
+    setAllowedActivityTypes((prev) => {
+      // Selecting "any" clears all specific selections
+      if (value === "any") {
+        return ["any"];
+      }
+      const withoutAny = prev.filter((t) => t !== "any");
+      if (withoutAny.includes(value)) {
+        // Deselecting the last specific type falls back to "any"
+        const next = withoutAny.filter((t) => t !== value);
+        return next.length === 0 ? ["any"] : next;
+      }
+      return [...withoutAny, value];
+    });
+  };
+
+  const handleSaveChallengeSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!organization) return;
+
+    setSavingChallenge(true);
+    setError(null);
+    setSuccess(null);
+
+    const supabase = createClient();
+
+    try {
+      const { error } = await updateOrganization(supabase, organization.id, {
+        challenge_start_date: challengeStartDate || null,
+        challenge_end_date: challengeEndDate || null,
+        allowed_activity_types: allowedActivityTypes,
+        terms_of_use: termsOfUse || null,
+        public_signup: publicSignup,
+        homepage_content: homepageContent || null,
+      });
+
+      if (error) throw error;
+
+      setSuccess('Challenge settings saved successfully');
+      // Refresh org data
+      const { data: updatedOrg } = await getOrganizationBySlug(supabase, organization.slug);
+      if (updatedOrg) setOrganization(updatedOrg);
+    } catch (err) {
+      console.error('Error saving challenge settings:', err);
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to save challenge settings');
+    } finally {
+      setSavingChallenge(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -221,6 +303,148 @@ export default function OrganizationAdminPage() {
           {success}
         </div>
       )}
+
+      {/* Challenge Settings */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5" />
+            <CardTitle>Challenge Settings</CardTitle>
+          </div>
+          <CardDescription>
+            Configure the challenge dates, allowed activities, and sign-up options
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveChallengeSettings} className="space-y-6">
+            {/* Date range */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="challengeStartDate">Challenge Start Date</Label>
+                <Input
+                  id="challengeStartDate"
+                  type="date"
+                  value={challengeStartDate}
+                  onChange={(e) => setChallengeStartDate(e.target.value)}
+                  disabled={savingChallenge}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="challengeEndDate">Challenge End Date</Label>
+                <Input
+                  id="challengeEndDate"
+                  type="date"
+                  value={challengeEndDate}
+                  onChange={(e) => setChallengeEndDate(e.target.value)}
+                  min={challengeStartDate || undefined}
+                  disabled={savingChallenge}
+                />
+              </div>
+            </div>
+
+            {/* Allowed activity types */}
+            <div className="space-y-2">
+              <Label>Allowed Activity Types</Label>
+              <p className="text-xs text-muted-foreground">
+                Select which activities count toward the challenge. Choose &quot;Any Activity&quot; to allow all.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                {ACTIVITY_TYPE_OPTIONS.map((option) => {
+                  const isChecked = allowedActivityTypes.includes(option.value);
+                  return (
+                    <label
+                      key={option.value}
+                      className={`flex items-center gap-2 rounded-md border px-3 py-2 cursor-pointer text-sm transition-colors ${
+                        isChecked
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-input bg-background hover:bg-accent"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={isChecked}
+                        onChange={() => toggleActivityType(option.value)}
+                        disabled={savingChallenge}
+                      />
+                      {option.label}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Public signup toggle */}
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="font-medium text-sm">Public Sign-Up</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Allow anyone to join this challenge from the home page without an invitation
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={publicSignup}
+                onClick={() => setPublicSignup((v) => !v)}
+                disabled={savingChallenge}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${
+                  publicSignup ? "bg-primary" : "bg-input"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                    publicSignup ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Terms of use */}
+            <div className="space-y-2">
+              <Label htmlFor="termsOfUse">Terms of Use</Label>
+              <p className="text-xs text-muted-foreground">
+                Members will be required to accept these terms before joining. Leave blank for no terms.
+              </p>
+              <Textarea
+                id="termsOfUse"
+                placeholder="Enter your challenge terms of use here..."
+                value={termsOfUse}
+                onChange={(e) => setTermsOfUse(e.target.value)}
+                disabled={savingChallenge}
+                rows={5}
+              />
+            </div>
+
+            {/* Homepage content */}
+            <div className="space-y-2">
+              <Label htmlFor="homepageContent">Welcome / Homepage Content</Label>
+              <p className="text-xs text-muted-foreground">
+                Custom message shown on your organization&apos;s join page. Supports plain text.
+              </p>
+              <Textarea
+                id="homepageContent"
+                placeholder="Welcome to our challenge! Here's what you need to know..."
+                value={homepageContent}
+                onChange={(e) => setHomepageContent(e.target.value)}
+                disabled={savingChallenge}
+                rows={4}
+              />
+            </div>
+
+            <Button type="submit" disabled={savingChallenge}>
+              {savingChallenge ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Challenge Settings"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Invite Member Section */}
       <Card>

@@ -7,6 +7,12 @@ export interface Organization {
   description: string | null;
   avatar_url: string | null;
   is_active: boolean;
+  challenge_start_date: string | null; // YYYY-MM-DD
+  challenge_end_date: string | null;   // YYYY-MM-DD
+  allowed_activity_types: string[] | null;
+  terms_of_use: string | null;
+  public_signup: boolean;
+  homepage_content: string | null;
   created_at: string;
   updated_at: string;
 }
