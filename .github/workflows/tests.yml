@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [main, develop, fryshaun/**]
+    branches: [main, develop, fryshaun/**, copilot/**]
   pull_request:
     branches: [main, develop]
 

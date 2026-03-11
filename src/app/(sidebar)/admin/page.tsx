@@ -215,19 +215,19 @@ export default function OrganizationAdminPage() {
       const { data: existing } = await getOrganizationSettings(supabase, organization.id);
       const currentSettings = (existing?.settings as Record<string, unknown>) ?? {};
 
-      const parseProgramId = amiliaProgramId ? parseInt(amiliaProgramId, 10) : null;
-      const parseActivityId = amiliaActivityId ? parseInt(amiliaActivityId, 10) : null;
+      const programIdValue = amiliaProgramId ? parseInt(amiliaProgramId, 10) : null;
+      const activityIdValue = amiliaActivityId ? parseInt(amiliaActivityId, 10) : null;
 
-      if (parseProgramId !== null && isNaN(parseProgramId)) {
+      if (programIdValue !== null && isNaN(programIdValue)) {
         throw new Error('Program ID must be a valid number');
       }
-      if (parseActivityId !== null && isNaN(parseActivityId)) {
+      if (activityIdValue !== null && isNaN(activityIdValue)) {
         throw new Error('Activity ID must be a valid number');
       }
 
       const updatedSettings: AmiliaSettings = {
-        amilia_program_id: parseProgramId,
-        amilia_activity_id: parseActivityId,
+        amilia_program_id: programIdValue,
+        amilia_activity_id: activityIdValue,
       };
 
       const { error: saveError } = await updateOrganizationSettings(supabase, organization.id, {
