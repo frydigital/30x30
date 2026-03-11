@@ -264,3 +264,61 @@ export interface Database {
     };
   };
 }
+
+// ============================================
+// AMILIA WEBHOOK TYPES
+// ============================================
+
+export interface AmiliaWebhookAddress {
+  Latitude: number;
+  Longitude: number;
+  Address1: string;
+  Address2: string | null;
+  City: string;
+  Country: string;
+  StateProvince: string;
+  ZipPostalCode: string;
+}
+
+export interface AmiliaWebhookPerson {
+  Id: number;
+  FirstName: string;
+  LastName: string;
+  FullName: string;
+  DateOfBirth: string | null;
+  Email: string;
+  Address: AmiliaWebhookAddress | null;
+  Telephone: string | null;
+  TelephoneMobile: string | null;
+  TelephoneWork: string | null;
+}
+
+export interface AmiliaWebhookPayload {
+  RegistrationId: string;
+  Program: { Id: number; Name: string };
+  Activity: { Id: number; Name: string };
+  Category: { Id: number; Name: string } | null;
+  SubCategory: { Id: number; Name: string } | null;
+  Group: { Id: number; Name: string } | null;
+  DropIn: { OccurrenceId: number; OccurrenceDate: string } | null;
+  DateCreated: string;
+  Person: AmiliaWebhookPerson;
+  AccountOwner: { AccountId: number; AccountOwnerPersonId: number } | null;
+  Staff: { Id: number; FirstName: string; LastName: string; State: string } | null;
+  InvoiceItem: { Id: number } | null;
+  IsCancelled: boolean;
+}
+
+export interface AmiliaWebhookEvent {
+  Context: string;
+  Action: string;
+  Name: string;
+  EventTime: string;
+  Payload: AmiliaWebhookPayload;
+}
+
+/** Amilia settings stored in organization_settings.settings JSON */
+export interface AmiliaSettings {
+  amilia_program_id?: number | null;
+  amilia_activity_id?: number | null;
+}
