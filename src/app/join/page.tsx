@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, CheckCircle, Mail, User, Building2, Lock } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Loader2, CheckCircle, Mail, User, Building2, Lock, Flame, Trophy, Calendar } from "lucide-react";
 import { getOrganizationInvitation } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 
@@ -19,6 +20,15 @@ interface OrgContext {
   terms_of_use: string | null;
   homepage_content: string | null;
   public_signup: boolean;
+}
+
+interface LeaderboardEntry {
+  user_id: string;
+  username: string | null;
+  member_role: string;
+  current_streak: number;
+  longest_streak: number;
+  total_valid_days: number;
 }
 
 function JoinOrganizationContent() {
@@ -33,6 +43,7 @@ function JoinOrganizationContent() {
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [contextLoading, setContextLoading] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   // Load organization context and invitation
   useEffect(() => {
@@ -84,6 +95,21 @@ function JoinOrganizationContent() {
       }
 
       setContextLoading(false);
+
+      // Fetch public leaderboard
+      const hostname = window.location.hostname;
+      const slug = extractSubdomain(hostname) || searchParams.get("org");
+      if (slug) {
+        try {
+          const res = await fetch(`/api/leaderboard?org=${encodeURIComponent(slug)}`);
+          if (res.ok) {
+            const json = await res.json();
+            setLeaderboard(json.leaderboard ?? []);
+          }
+        } catch {
+          // Leaderboard is optional - ignore errors
+        }
+      }
     };
 
     loadContext();
@@ -212,8 +238,17 @@ function JoinOrganizationContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-4">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-4xl mx-auto space-y-6 py-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <Building2 className="w-12 h-12 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold">{orgContext.name}</h1>
+          <p className="text-muted-foreground mt-1">30x30 Challenge</p>
+        </div>
+
         {/* Homepage / welcome content */}
         {orgContext.homepage_content && (
           <Card>
@@ -225,33 +260,32 @@ function JoinOrganizationContent() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Building2 className="w-12 h-12 text-primary" />
-            </div>
-            <CardTitle className="text-2xl font-bold">
-              Join {orgContext.name}
-            </CardTitle>
-            <CardDescription>
-              Create your account to participate in the 30x30 challenge
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username (optional)</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="johndoe"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10"
-                    disabled={loading}
-                  />
+        <div className="grid md:grid-cols-2 gap-6 items-start">
+          {/* Sign up form */}
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl font-bold">
+                Join the Challenge
+              </CardTitle>
+              <CardDescription>
+                Create your account to participate
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username (optional)</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="johndoe"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="pl-10"
+                      disabled={loading}
+                    />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Display name for the leaderboard
@@ -350,6 +384,56 @@ function JoinOrganizationContent() {
             </form>
           </CardContent>
         </Card>
+
+          {/* Public Leaderboard */}
+          {leaderboard.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  Current Standings
+                </CardTitle>
+                <CardDescription>Top participants in this challenge</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {leaderboard.slice(0, 10).map((entry, index) => (
+                    <div key={entry.user_id} className="flex items-center gap-3">
+                      <div className="w-8 text-center shrink-0">
+                        {index === 0 && <span className="text-xl">🥇</span>}
+                        {index === 1 && <span className="text-xl">🥈</span>}
+                        {index === 2 && <span className="text-xl">🥉</span>}
+                        {index > 2 && (
+                          <span className="text-sm font-bold text-muted-foreground">#{index + 1}</span>
+                        )}
+                      </div>
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                          {(entry.username || "?").charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {entry.username || "Anonymous"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs shrink-0">
+                        <div className="flex items-center gap-1 text-orange-500">
+                          <Flame className="w-3.5 h-3.5" />
+                          <span className="font-bold">{entry.current_streak}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-green-500">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span className="font-bold">{entry.total_valid_days}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

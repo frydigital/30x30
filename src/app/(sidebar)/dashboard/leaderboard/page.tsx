@@ -51,18 +51,16 @@ export default async function OrganizationLeaderboardPage({
     redirect("/dashboard");
   }
 
-  // Get organization leaderboard - only show members who have opted in to public leaderboard
+  // Get organization leaderboard
   const { data: leaderboard } = await supabase
     .from("organization_leaderboard")
     .select("*")
     .eq("organization_id", organization.id)
-    .eq("is_public", true)
     .order("current_streak", { ascending: false })
     .order("longest_streak", { ascending: false })
     .order("total_valid_days", { ascending: false }) as { data: OrganizationLeaderboardEntry[] | null };
 
-  // Defensive filter to avoid rendering private profiles if backend filtering changes.
-  const publicLeaderboard = (leaderboard ?? []).filter((entry) => entry.is_public);
+  const publicLeaderboard = leaderboard ?? [];
 
   return (
     <>
@@ -143,7 +141,7 @@ export default async function OrganizationLeaderboardPage({
           <CardHeader>
             <CardTitle>No Activity Yet</CardTitle>
             <CardDescription>
-              No members have opted in to the public leaderboard yet. Members can enable this in their profile settings.
+              No members have recorded any activities yet. Start tracking your workouts to appear on the leaderboard!
             </CardDescription>
           </CardHeader>
         </Card>

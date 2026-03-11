@@ -179,17 +179,13 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     if (orgSlug && (userRole === 'admin' || userRole === 'owner')) {
       navMain.push({
         title: 'Organization',
-        url: `/org/admin?org=${orgSlug}`,
-        isActive: pathname?.startsWith('/org/admin') || pathname?.startsWith('/org/settings'),
+        url: `/admin?org=${orgSlug}`,
+        isActive: pathname?.startsWith('/admin'),
         icon: ShieldUser,
         items: [
           {
-            title: 'Members',
-            url: `/org/admin?org=${orgSlug}`,
-          },
-          {
-            title: 'Settings',
-            url: `/org/settings?org=${orgSlug}`,
+            title: 'Admin',
+            url: `/admin?org=${orgSlug}`,
           },
         ],
       });

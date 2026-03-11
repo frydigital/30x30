@@ -108,6 +108,7 @@ export default function OrganizationAdminPage() {
           .single();
 
         if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+          setOrganization(null);
           setError('You do not have permission to access this page');
           setLoading(false);
           return;
