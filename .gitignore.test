@@ -1,0 +1,9 @@
+# Test coverage
+coverage/
+
+# E2E test results
+test-results/
+playwright-report/
+
+# Vitest cache
+.vitest/

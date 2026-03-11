@@ -59,6 +59,11 @@ export function AppSwitcher({
             <Link href={organizationSlug ? `/org/leaderboard?org=${organizationSlug}` : '/'} className="text-xl font-bold">
               30x30 {organizationName && <span className="text-muted-foreground">| {organizationName}</span>}
             </Link>
+            {organizationSlug && userRole && (
+              <span className="text-xs uppercase text-muted-foreground">
+                {userRole}
+              </span>
+            )}
 
 
           </div>
