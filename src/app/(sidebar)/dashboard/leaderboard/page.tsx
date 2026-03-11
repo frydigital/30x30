@@ -61,15 +61,18 @@ export default async function OrganizationLeaderboardPage({
     .order("longest_streak", { ascending: false })
     .order("total_valid_days", { ascending: false }) as { data: OrganizationLeaderboardEntry[] | null };
 
+  // Defensive filter to avoid rendering private profiles if backend filtering changes.
+  const publicLeaderboard = (leaderboard ?? []).filter((entry) => entry.is_public);
+
   return (
     <>
       <div className="flex items-center gap-3 py-4">
         <h1 className="text-3xl font-bold">{organization?.name} Leaderboard</h1>
       </div>
 
-      {leaderboard && leaderboard.length > 0 ? (
+      {publicLeaderboard.length > 0 ? (
         <div className="grid gap-4">
-          {leaderboard.map((entry, index) => (
+          {publicLeaderboard.map((entry, index) => (
             <Card key={entry.user_id} className={index < 3 ? "border-primary/50" : ""}>
               <CardContent className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-4">
