@@ -121,6 +121,7 @@ export interface OrganizationLeaderboardEntry {
   username: string | null;
   avatar_url: string | null;
   organization_id: string;
+  is_public: boolean;
   member_role: OrganizationRole;
   current_streak: number;
   longest_streak: number;

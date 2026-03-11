@@ -7,7 +7,7 @@ import { extractSubdomain } from '@/lib/organizations/subdomain';
 import { createClient } from '@/lib/supabase/client';
 import { isSuperadmin } from '@/lib/superadmin';
 import type { Organization, OrganizationRole } from '@/lib/types';
-import { LayoutDashboard, Origami, PlusCircle, ShieldUser } from 'lucide-react';
+import { LayoutDashboard, Origami, PlusCircle, ShieldUser, Trophy } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -138,19 +138,15 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     if (orgSlug) {
       navMain.push({
         title: 'Dashboard',
-        url: `/leaderboard?org=${orgSlug}`,
+        url: `/dashboard?org=${orgSlug}`,
         icon: LayoutDashboard,
-        isActive: pathname?.startsWith('/leaderboard') || pathname?.startsWith('/activity'),
-        items: [
-          {
-            title: 'Leaderboard',
-            url: `/dashboard/leaderboard?org=${orgSlug}`,
-          },
-          {
-            title: 'My Activity',
-            url: `/dashboard/activity?org=${orgSlug}`,
-          },
-        ],
+        isActive: pathname === '/dashboard',
+      });
+      navMain.push({
+        title: 'Leaderboard',
+        url: `/dashboard/leaderboard?org=${orgSlug}`,
+        icon: Trophy,
+        isActive: pathname?.startsWith('/dashboard/leaderboard'),
       });
       teams.push({
         name: organization.name,
