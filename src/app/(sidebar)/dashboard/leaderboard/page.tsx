@@ -51,11 +51,12 @@ export default async function OrganizationLeaderboardPage({
     redirect("/dashboard");
   }
 
-  // Get organization leaderboard
+  // Get organization leaderboard - only show members who have opted in to public leaderboard
   const { data: leaderboard } = await supabase
     .from("organization_leaderboard")
     .select("*")
     .eq("organization_id", organization.id)
+    .eq("is_public", true)
     .order("current_streak", { ascending: false })
     .order("longest_streak", { ascending: false })
     .order("total_valid_days", { ascending: false }) as { data: OrganizationLeaderboardEntry[] | null };
@@ -139,7 +140,7 @@ export default async function OrganizationLeaderboardPage({
           <CardHeader>
             <CardTitle>No Activity Yet</CardTitle>
             <CardDescription>
-              Be the first to log activities and start your streak!
+              No members have opted in to the public leaderboard yet. Members can enable this in their profile settings.
             </CardDescription>
           </CardHeader>
         </Card>
