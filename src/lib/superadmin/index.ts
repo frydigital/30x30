@@ -391,6 +391,27 @@ export async function getPlatformStatistics(
   } | null; 
   error: Error | null;
 }> {
+  const getPlanName = (plan: unknown): string => {
+    if (plan && typeof plan === 'object' && 'name' in plan) {
+      const name = (plan as { name?: unknown }).name;
+      if (typeof name === 'string' && name.length > 0) {
+        return name;
+      }
+    }
+
+    if (Array.isArray(plan) && plan.length > 0) {
+      const firstPlan = plan[0];
+      if (firstPlan && typeof firstPlan === 'object' && 'name' in firstPlan) {
+        const name = (firstPlan as { name?: unknown }).name;
+        if (typeof name === 'string' && name.length > 0) {
+          return name;
+        }
+      }
+    }
+
+    return 'Unknown';
+  };
+
   try {
     // Get organization counts
     const { count: totalOrgs } = await supabase
@@ -431,7 +452,7 @@ export async function getPlatformStatistics(
       .eq('status', 'active');
 
     const subsByPlan = subsData?.reduce((acc, sub) => {
-      const planName = (sub.plan as any)?.name || 'Unknown';
+      const planName = getPlanName((sub as { plan?: unknown }).plan);
       acc[planName] = (acc[planName] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);

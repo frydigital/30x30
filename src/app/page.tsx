@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Flame, Trophy, Users, Building2, Target } from "lucide-react";
+import { Flame, Users, Building2, Target } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,7 @@ export default async function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
             <p className="text-muted-foreground text-lg">
-              Create your organization and start your team's fitness journey
+              Create your organization and start your team&apos;s fitness journey
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export default async function Home() {
                 </div>
                 <CardTitle>Create Your Organization</CardTitle>
                 <CardDescription>
-                  Set up your team, gym, or company's 30x30 challenge with custom start dates and goals
+                  Set up your team, gym, or company&apos;s 30x30 challenge with custom start dates and goals
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -112,7 +112,7 @@ export default async function Home() {
                 </div>
                 <CardTitle>Track & Compete</CardTitle>
                 <CardDescription>
-                  Monitor progress on your team's leaderboard and stay motivated together
+                  Monitor progress on your team&apos;s leaderboard and stay motivated together
                 </CardDescription>
               </CardHeader>
             </Card>

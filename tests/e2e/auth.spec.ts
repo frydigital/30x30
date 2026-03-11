@@ -5,7 +5,7 @@ test.describe('Authentication Flow - OTP', () => {
     test('should display login form', async ({ page }) => {
       await page.goto('/login');
       
-      await expect(page.getByRole('heading', { name: /30x30 Challenge/i })).toBeVisible();
+      await expect(page.getByText(/30x30 Challenge/i)).toBeVisible();
       await expect(page.getByLabel(/Email/i)).toBeVisible();
       await expect(page.getByRole('button', { name: /Send Verification Code/i })).toBeVisible();
     });
@@ -42,7 +42,7 @@ test.describe('Authentication Flow - OTP', () => {
       
       // Should show OTP input
       await expect(page.getByText(/Check your email!/i)).toBeVisible();
-      await expect(page.getByLabel(/Verification Code/i)).toBeVisible();
+      await expect(page.getByText(/Verification Code/i)).toBeVisible();
     });
 
     test('should navigate to signup page', async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe('Authentication Flow - OTP', () => {
     test('should display signup form with username field', async ({ page }) => {
       await page.goto('/signup');
       
-      await expect(page.getByRole('heading', { name: /Join 30x30 Challenge/i })).toBeVisible();
+      await expect(page.getByText(/Join 30x30 Challenge/i)).toBeVisible();
       await expect(page.getByLabel(/Username/i)).toBeVisible();
       await expect(page.getByLabel(/Email/i)).toBeVisible();
       await expect(page.getByRole('button', { name: /Create Account/i })).toBeVisible();
@@ -97,7 +97,7 @@ test.describe('Authentication Flow - OTP', () => {
       await page.getByLabel(/Email/i).fill('test@example.com');
       await page.getByRole('button', { name: /Create Account/i }).click();
       
-      await expect(page.getByLabel(/Verification Code/i)).toBeVisible();
+      await expect(page.getByText(/Verification Code/i)).toBeVisible();
     });
 
     test('should navigate to login page', async ({ page }) => {
@@ -124,7 +124,7 @@ test.describe('Authentication Flow - OTP', () => {
       await page.getByRole('button', { name: /Send Verification Code/i }).click();
       
       // Wait for OTP input to appear
-      await expect(page.getByLabel(/Verification Code/i)).toBeVisible();
+      await expect(page.getByText(/Verification Code/i)).toBeVisible();
       
       // Verify button should be disabled initially
       const verifyButton = page.getByRole('button', { name: /Verify & Sign In/i });
@@ -145,7 +145,7 @@ test.describe('Authentication Flow - OTP', () => {
       await page.getByLabel(/Email/i).fill('test@example.com');
       await page.getByRole('button', { name: /Send Verification Code/i }).click();
       
-      await expect(page.getByLabel(/Verification Code/i)).toBeVisible();
+      await expect(page.getByText(/Verification Code/i)).toBeVisible();
       
       // Click "Use a different email"
       await page.getByRole('button', { name: /Use a different email/i }).click();

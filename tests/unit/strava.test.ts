@@ -25,13 +25,14 @@ describe('Strava API Integration', () => {
 
   describe('Activity Data Processing', () => {
     it('should filter activities by date range', () => {
+      const referenceDate = new Date('2025-12-10T00:00:00Z')
       const activities = [
         { start_date: '2025-12-01T10:00:00Z', type: 'Run' },
-        { start_date: '2025-11-15T10:00:00Z', type: 'Ride' },
+        { start_date: '2025-10-15T10:00:00Z', type: 'Ride' },
         { start_date: '2025-12-05T10:00:00Z', type: 'Workout' },
       ]
       
-      const thirtyDaysAgo = new Date()
+      const thirtyDaysAgo = new Date(referenceDate)
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       
       const filtered = activities.filter(activity => {
@@ -39,7 +40,7 @@ describe('Strava API Integration', () => {
         return activityDate >= thirtyDaysAgo
       })
       
-      expect(filtered.length).toBeGreaterThan(0)
+      expect(filtered).toHaveLength(2)
     })
 
     it('should convert duration from seconds to minutes', () => {

@@ -25,8 +25,6 @@ export default function ActivityClient({
   const [syncing, setSyncing] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  // Manual entry state
-  const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualDate, setManualDate] = useState(new Date().toISOString().split("T")[0]);
   const [manualDuration, setManualDuration] = useState("");
   const [manualType, setManualType] = useState("Workout");
@@ -104,7 +102,6 @@ export default function ActivityClient({
 
       if (response.ok) {
         setMessage({ type: "success", text: "Activity added!" });
-        setShowManualEntry(false);
         setManualDuration("");
         setManualName("");
         setManualNotes("");
@@ -204,7 +201,18 @@ export default function ActivityClient({
                     {addingManual && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Add Activity
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowManualEntry(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setManualDate(new Date().toISOString().split("T")[0]);
+                      setManualDuration("");
+                      setManualType("Workout");
+                      setManualName("");
+                      setManualNotes("");
+                      setMessage(null);
+                    }}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -229,6 +237,11 @@ export default function ActivityClient({
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!stravaConfigured && (
+              <p className="mb-3 text-sm text-amber-700 dark:text-amber-400">
+                Strava is connected, but app credentials are not configured.
+              </p>
+            )}
             {/* Strava Connection */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex gap-2">
@@ -239,6 +252,17 @@ export default function ActivityClient({
                     <RefreshCw className="w-4 h-4 mr-2" />
                   )}
                   Sync
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDisconnectStrava}
+                  disabled={disconnecting}
+                >
+                  {disconnecting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  Disconnect
                 </Button>
               </div>
             </div>
