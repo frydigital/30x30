@@ -9,14 +9,16 @@ import {
   createOrganizationInvitation,
   getOrganizationBySlug,
   getOrganizationMembers,
+  getOrganizationSettings,
   removeOrganizationMember,
   updateMemberRole,
   updateOrganization,
+  updateOrganizationSettings
 } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 import { createClient } from "@/lib/supabase/client";
-import type { Organization, OrganizationMember, OrganizationRole } from "@/lib/types";
-import { CalendarDays, Loader2, Mail, Settings, Shield, Users, UserX } from "lucide-react";
+import type { AmiliaSettings, Organization, OrganizationMember, OrganizationRole } from "@/lib/types";
+import { CalendarDays, Loader2, Mail, Settings, Shield, Users, UserX, Webhook } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -52,6 +54,12 @@ export default function OrganizationAdminPage() {
   const [publicSignup, setPublicSignup] = useState(true);
   const [homepageContent, setHomepageContent] = useState("");
   const [savingChallenge, setSavingChallenge] = useState(false);
+
+  // Amilia integration state
+  const [amiliaProgramId, setAmiliaProgramId] = useState("");
+  const [amiliaActivityId, setAmiliaActivityId] = useState("");
+  const [savingAmilia, setSavingAmilia] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
 
   // Load organization and check permissions
   useEffect(() => {
@@ -112,6 +120,22 @@ export default function OrganizationAdminPage() {
         if (membersError) throw membersError;
 
         setMembers(membersData || []);
+
+        // Build the webhook URL for this organization
+        const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || '30x30.app';
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const wUrl = isLocalhost
+          ? `${window.location.origin}/api/amilia/webhook?org=${slug}`
+          : `https://${slug}.${baseDomain}/api/amilia/webhook`;
+        setWebhookUrl(wUrl);
+
+        // Load Amilia settings
+        const { data: orgSettings } = await getOrganizationSettings(supabase, org.id);
+        if (orgSettings?.settings) {
+          const settings = orgSettings.settings as AmiliaSettings;
+          setAmiliaProgramId(settings.amilia_program_id?.toString() ?? "");
+          setAmiliaActivityId(settings.amilia_activity_id?.toString() ?? "");
+        }
       } catch (err) {
         console.error('Error loading data:', err);
         const error = err as { message?: string };
@@ -255,6 +279,52 @@ export default function OrganizationAdminPage() {
       setError(error.message || 'Failed to save challenge settings');
     } finally {
       setSavingChallenge(false);
+    }
+  };
+
+  const handleSaveAmiliaSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!organization) return;
+
+    setSavingAmilia(true);
+    setError(null);
+    setSuccess(null);
+
+    const supabase = createClient();
+
+    try {
+      // Load existing settings to merge with Amilia fields
+      const { data: existing } = await getOrganizationSettings(supabase, organization.id);
+      const currentSettings = (existing?.settings as Record<string, unknown>) ?? {};
+
+      const programIdValue = amiliaProgramId ? parseInt(amiliaProgramId, 10) : null;
+      const activityIdValue = amiliaActivityId ? parseInt(amiliaActivityId, 10) : null;
+
+      if (programIdValue !== null && isNaN(programIdValue)) {
+        throw new Error('Program ID must be a valid number');
+      }
+      if (activityIdValue !== null && isNaN(activityIdValue)) {
+        throw new Error('Activity ID must be a valid number');
+      }
+
+      const updatedSettings: AmiliaSettings = {
+        amilia_program_id: programIdValue,
+        amilia_activity_id: activityIdValue,
+      };
+
+      const { error: saveError } = await updateOrganizationSettings(supabase, organization.id, {
+        settings: { ...currentSettings, ...updatedSettings },
+      });
+
+      if (saveError) throw saveError;
+
+      setSuccess('Amilia integration settings saved successfully');
+    } catch (err) {
+      console.error('Error saving Amilia settings:', err);
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to save Amilia settings');
+    } finally {
+      setSavingAmilia(false);
     }
   };
 
@@ -555,6 +625,95 @@ export default function OrganizationAdminPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Amilia Integration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Webhook className="w-5 h-5" />
+            <CardTitle>Amilia Integration</CardTitle>
+          </div>
+          <CardDescription>
+            Configure the Amilia webhook to automatically invite registrants to your organization.
+            When a user registers through Amilia, they will receive an invite link by email.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Webhook URL */}
+            <div className="space-y-2">
+              <Label>Webhook URL</Label>
+              <p className="text-xs text-muted-foreground">
+                Copy this URL into your Amilia account under <strong>Settings → Webhooks</strong>.
+                Amilia will POST registration events to this endpoint.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={webhookUrl}
+                  className="font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(webhookUrl);
+                    setSuccess('Webhook URL copied to clipboard');
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+
+            {/* Amilia filter settings */}
+            <form onSubmit={handleSaveAmiliaSettings} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Optionally restrict which registrations trigger an invite by providing a Program ID
+                and/or Activity ID from Amilia. Leave blank to accept all registrations.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amiliaProgramId">Amilia Program ID (optional)</Label>
+                  <Input
+                    id="amiliaProgramId"
+                    type="number"
+                    placeholder="e.g. 1"
+                    value={amiliaProgramId}
+                    onChange={(e) => setAmiliaProgramId(e.target.value)}
+                    disabled={savingAmilia}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amiliaActivityId">Amilia Activity ID (optional)</Label>
+                  <Input
+                    id="amiliaActivityId"
+                    type="number"
+                    placeholder="e.g. 2"
+                    value={amiliaActivityId}
+                    onChange={(e) => setAmiliaActivityId(e.target.value)}
+                    disabled={savingAmilia}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Cancelled registrations (<code>IsCancelled: true</code>) are always ignored automatically.
+              </p>
+              <Button type="submit" disabled={savingAmilia}>
+                {savingAmilia ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Amilia Settings'
+                )}
+              </Button>
+            </form>
           </div>
         </CardContent>
       </Card>
