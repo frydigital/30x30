@@ -84,6 +84,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-key
 
   e2e-tests:
     name: E2E Tests
@@ -112,6 +113,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-key
       
       - name: Run E2E tests
         run: pnpm test:e2e
@@ -119,6 +121,7 @@ jobs:
           CI: true
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-key
       
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
