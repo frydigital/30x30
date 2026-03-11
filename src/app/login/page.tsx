@@ -6,29 +6,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import Link from "next/link";
 import { Mail, Loader2, CheckCircle } from "lucide-react";
 
+type LoginMode = "password" | "magic-link" | "magic-link-sent";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<LoginMode>("password");
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // --- Password login ---
+  const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     const supabase = createClient();
-    
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      window.location.href = "/dashboard";
+    }
+  };
+
+  // --- Magic link (OTP) ---
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const supabase = createClient();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false, // Only allow existing users to sign in
+        shouldCreateUser: false, // Only existing users
+        emailRedirectTo: `${appUrl}/auth/callback`,
       },
     });
 
@@ -36,30 +56,8 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      setSent(true);
+      setMode("magic-link-sent");
       setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setVerifying(true);
-    setError(null);
-
-    const supabase = createClient();
-    
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    });
-
-    if (error) {
-      setError(error.message);
-      setVerifying(false);
-    } else {
-      // Redirect to dashboard on success
-      window.location.href = '/dashboard';
     }
   };
 
@@ -68,83 +66,34 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">30x30 Challenge</CardTitle>
-          <CardDescription>
-            Track your 30-minute daily activity streak for 30 days
-          </CardDescription>
+          <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          {sent ? (
+          {/* Magic-link sent confirmation */}
+          {mode === "magic-link-sent" ? (
             <div className="space-y-4">
               <div className="text-center space-y-2">
                 <CheckCircle className="w-12 h-12 mx-auto text-green-500" />
                 <h3 className="text-lg font-medium">Check your email!</h3>
                 <p className="text-sm text-muted-foreground">
-                  We&apos;ve sent a 6-digit code to <strong>{email}</strong>
+                  We&apos;ve sent a sign-in link to <strong>{email}</strong>.
+                  Click the link to sign in — no password needed.
                 </p>
               </div>
-              
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="otp" className="text-center block">Verification Code</Label>
-                  <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={otp}
-                      onChange={(value) => setOtp(value)}
-                      disabled={verifying}
-                      autoFocus
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Enter the 6-digit code from your email
-                  </p>
-                </div>
-                
-                {error && (
-                  <div className="text-sm text-destructive text-center">{error}</div>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={verifying || otp.length !== 6}
-                >
-                  {verifying ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify & Sign In"
-                  )}
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setSent(false);
-                    setOtp('');
-                    setError(null);
-                  }}
-                  className="w-full"
-                  disabled={verifying}
-                >
-                  Use a different email
-                </Button>
-              </form>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMode("password");
+                  setError(null);
+                }}
+              >
+                Back to sign in
+              </Button>
             </div>
-          ) : (
-            <form onSubmit={handleSendOtp} className="space-y-4">
+          ) : mode === "password" ? (
+            /* --- Password form (primary) --- */
+            <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -161,7 +110,20 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
               {error && (
                 <div className="text-sm text-destructive">{error}</div>
               )}
@@ -169,21 +131,41 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading || !email}
+                disabled={loading || !email || !password}
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending code...
+                    Signing in…
                   </>
                 ) : (
-                  "Send Verification Code"
+                  "Sign In"
                 )}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
-                No password needed. We&apos;ll send you a 6-digit code to sign in.
-              </p>
+              {/* Magic link alternative */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    or
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMode("magic-link");
+                  setError(null);
+                }}
+              >
+                Send sign-in link instead
+              </Button>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -197,16 +179,70 @@ export default function LoginPage() {
               </div>
 
               <Button type="button" variant="outline" className="w-full" asChild>
-                <Link href="/signup">
-                  Create an account
-                </Link>
+                <Link href="/create-organization">Create a challenge</Link>
+              </Button>
+            </form>
+          ) : (
+            /* --- Magic link form --- */
+            <form onSubmit={handleSendMagicLink} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Enter your email and we&apos;ll send you a sign-in link — no
+                password required.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="email-magic">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="email-magic"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="text-sm text-destructive">{error}</div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !email}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending link…
+                  </>
+                ) : (
+                  "Send Sign-In Link"
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMode("password");
+                  setError(null);
+                }}
+              >
+                Back to password sign in
               </Button>
             </form>
           )}
 
           <div className="mt-6 text-center">
             <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-              ← Back to Leaderboard
+              ← Back to Home
             </Link>
           </div>
         </CardContent>
