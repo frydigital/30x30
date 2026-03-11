@@ -138,23 +138,22 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     if (orgSlug) {
       navMain.push({
         title: 'Dashboard',
-        url: `/org/leaderboard?org=${orgSlug}`,
+        url: `/leaderboard?org=${orgSlug}`,
         icon: LayoutDashboard,
-        isActive: pathname?.startsWith('/org/leaderboard') || pathname?.startsWith('/org/activity'),
+        isActive: pathname?.startsWith('/leaderboard') || pathname?.startsWith('/activity'),
         items: [
           {
             title: 'Leaderboard',
-            url: `/org/leaderboard?org=${orgSlug}`,
+            url: `/dashboard/leaderboard?org=${orgSlug}`,
           },
           {
             title: 'My Activity',
-            url: `/org/activity?org=${orgSlug}`,
+            url: `/dashboard/activity?org=${orgSlug}`,
           },
         ],
       });
       teams.push({
         name: organization.name,
-        //logo: organization.avatar_url,
         plan: organization.description || undefined
       })
     } else {
@@ -231,13 +230,9 @@ export function NavDataProvider({ children }: { children: ReactNode }) {
     // Settings section (personal)
     user.items!.push(
       {
-        title: 'Profile',
+        title: 'Settings',
         url: '/settings',
       },
-      {
-        title: 'Connections',
-        url: '/settings/connections',
-      }
     );
 
     return { navMain, user, teams };
