@@ -86,7 +86,7 @@ export default function OrganizationAdminPage() {
         // Populate challenge settings from loaded org
         setChallengeStartDate(org.challenge_start_date ?? "");
         setChallengeEndDate(org.challenge_end_date ?? "");
-        setAllowedActivityTypes((org.allowed_activity_types?.length ?? 0) > 0 ? org.allowed_activity_types! : ["any"]);
+        setAllowedActivityTypes(org.allowed_activity_types?.length ? org.allowed_activity_types : ["any"]);
         setTermsOfUse(org.terms_of_use ?? "");
         setPublicSignup(org.public_signup !== false);
         setHomepageContent(org.homepage_content ?? "");

@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2, CheckCircle, Mail, User, Building2, Lock } from "lucide-react";
-import { getOrganizationInvitation, acceptOrganizationInvitation } from "@/lib/organizations";
+import { getOrganizationInvitation } from "@/lib/organizations";
 import { extractSubdomain } from "@/lib/organizations/subdomain";
 
 interface OrgContext {
   name: string;
   slug: string;
+  id: string;
   terms_of_use: string | null;
   homepage_content: string | null;
   public_signup: boolean;
@@ -25,9 +25,8 @@ function JoinOrganizationContent() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
-  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orgContext, setOrgContext] = useState<OrgContext | null>(null);
@@ -39,9 +38,9 @@ function JoinOrganizationContent() {
   useEffect(() => {
     const loadContext = async () => {
       const supabase = createClient();
-      
+
       // Check for invitation token
-      const token = searchParams.get('token');
+      const token = searchParams.get("token");
       setInvitationToken(token);
 
       if (token) {
@@ -51,6 +50,7 @@ function JoinOrganizationContent() {
           setOrgContext({
             name: invitation.organization.name,
             slug: invitation.organization.slug,
+            id: invitation.organization.id,
             terms_of_use: invitation.organization.terms_of_use,
             homepage_content: invitation.organization.homepage_content,
             public_signup: invitation.organization.public_signup !== false,
@@ -58,20 +58,21 @@ function JoinOrganizationContent() {
           setEmail(invitation.email);
         }
       } else {
-        // Try to get organization from subdomain
+        // Try to get organization from subdomain or query param
         const hostname = window.location.hostname;
-        const slug = extractSubdomain(hostname) || searchParams.get('org');
-        
+        const slug = extractSubdomain(hostname) || searchParams.get("org");
+
         if (slug) {
           const { data: org } = await supabase
-            .from('organizations')
-            .select('name, slug, terms_of_use, homepage_content, public_signup')
-            .eq('slug', slug)
-            .eq('is_active', true)
+            .from("organizations")
+            .select("id, name, slug, terms_of_use, homepage_content, public_signup")
+            .eq("slug", slug)
+            .eq("is_active", true)
             .single();
-          
+
           if (org) {
             setOrgContext({
+              id: org.id,
               name: org.name,
               slug: org.slug,
               terms_of_use: org.terms_of_use ?? null,
@@ -88,13 +89,18 @@ function JoinOrganizationContent() {
     loadContext();
   }, [searchParams]);
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orgContext) return;
 
     // Require terms acceptance if terms are set
     if (orgContext.terms_of_use && !termsAccepted) {
-      setError('Please accept the terms of use to continue.');
+      setError("Please accept the terms of use to continue.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -102,79 +108,28 @@ function JoinOrganizationContent() {
     setError(null);
 
     const supabase = createClient();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
 
-    try {
-      // Get organization ID
-      const { data: org } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('slug', orgContext.slug)
-        .single();
-
-      if (!org) throw new Error('Organization not found');
-
-      // Note: organization_id is passed in user metadata but validated server-side
-      // in the handle_new_user database function to prevent unauthorized access
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            username: username || null,
-            organization_id: org.id,
-          },
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${appUrl}/auth/callback`,
+        data: {
+          username: username || null,
+          organization_id: orgContext.id,
+          // Store invitation token in metadata so the callback can accept it
+          ...(invitationToken ? { pending_invitation_token: invitationToken } : {}),
         },
-      });
+      },
+    });
 
-      if (authError) throw authError;
-
-      setSent(true);
-    } catch (err) {
-      console.error('Error sending OTP:', err);
-      const error = err as { message?: string };
-      setError(error.message || 'Failed to send verification code. Please try again.');
-    } finally {
+    if (signUpError) {
+      setError(signUpError.message);
       setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setVerifying(true);
-    setError(null);
-
-    const supabase = createClient();
-
-    try {
-      const { error: verifyError, data } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email',
-      });
-
-      if (verifyError) throw verifyError;
-
-      // If there's an invitation token, accept it
-      if (invitationToken && data.user) {
-        const { error: acceptError } = await acceptOrganizationInvitation(
-          supabase,
-          invitationToken,
-          data.user.id
-        );
-
-        if (acceptError) {
-          console.error('Error accepting invitation:', acceptError);
-          // Don't fail the whole flow, user is already created
-        }
-      }
-
-      // Redirect to organization dashboard
-      window.location.href = '/dashboard';
-    } catch (err) {
-      console.error('Error verifying OTP:', err);
-      const error = err as { message?: string };
-      setError(error.message || 'Invalid verification code. Please try again.');
-      setVerifying(false);
+    } else {
+      setSent(true);
+      setLoading(false);
     }
   };
 
@@ -194,7 +149,8 @@ function JoinOrganizationContent() {
             <div className="text-center space-y-4">
               <Building2 className="w-12 h-12 mx-auto text-muted-foreground" />
               <p className="text-muted-foreground">
-                No organization specified. Please use an invitation link or access from an organization subdomain.
+                No organization specified. Please use an invitation link or
+                access from an organization subdomain.
               </p>
               <Button variant="outline" asChild>
                 <Link href="/">Go to Home</Link>
@@ -216,10 +172,37 @@ function JoinOrganizationContent() {
               <Lock className="w-12 h-12 mx-auto text-muted-foreground" />
               <h2 className="text-lg font-semibold">{orgContext.name}</h2>
               <p className="text-muted-foreground">
-                This challenge is invite-only. Please use the invitation link you received to join.
+                This challenge is invite-only. Please use the invitation link
+                you received to join.
               </p>
               <Button variant="outline" asChild>
                 <Link href="/">Go to Home</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // --- Check-email state ---
+  if (sent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-8 pb-8">
+            <div className="text-center space-y-4">
+              <CheckCircle className="w-16 h-16 mx-auto text-green-500" />
+              <h2 className="text-2xl font-bold">Check your email!</h2>
+              <p className="text-muted-foreground">
+                We&apos;ve sent a confirmation link to <strong>{email}</strong>.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Click the link in the email to confirm your account and join{" "}
+                <strong>{orgContext.name}</strong>.
+              </p>
+              <Button variant="outline" asChild>
+                <Link href="/">Back to Home</Link>
               </Button>
             </div>
           </CardContent>
@@ -251,166 +234,120 @@ function JoinOrganizationContent() {
               Join {orgContext.name}
             </CardTitle>
             <CardDescription>
-              Create your account to start tracking your 30x30 challenge
+              Create your account to participate in the 30x30 challenge
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {sent ? (
-              <div className="space-y-4">
-                <div className="text-center space-y-2">
-                  <CheckCircle className="w-12 h-12 mx-auto text-green-500" />
-                  <h3 className="text-lg font-medium">Check your email!</h3>
-                  <p className="text-sm text-muted-foreground">
-                    We&apos;ve sent a 6-digit code to <strong>{email}</strong>
-                  </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username (optional)</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="johndoe"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10"
+                    disabled={loading}
+                  />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Display name for the leaderboard
+                </p>
+              </div>
 
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="otp" className="text-center block">Verification Code</Label>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={otp}
-                        onChange={(value) => setOtp(value)}
-                        disabled={verifying}
-                        autoFocus
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Enter the 6-digit code from your email
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                    disabled={loading || !!invitationToken}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="At least 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Terms of Use */}
+              {orgContext.terms_of_use && (
+                <div className="space-y-2">
+                  <Label>Terms of Use</Label>
+                  <div className="rounded-md border bg-muted/50 p-3 max-h-40 overflow-y-auto">
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                      {orgContext.terms_of_use}
                     </p>
                   </div>
-
-                  {error && (
-                    <div className="text-sm text-destructive text-center">{error}</div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={verifying || otp.length !== 6}
-                  >
-                    {verifying ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify & Join Challenge"
-                    )}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setSent(false);
-                      setOtp('');
-                      setError(null);
-                    }}
-                    className="w-full"
-                    disabled={verifying}
-                  >
-                    Use a different email
-                  </Button>
-                </form>
-              </div>
-            ) : (
-              <form onSubmit={handleSendOtp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username (optional)</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="username"
-                      type="text"
-                      placeholder="johndoe"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="pl-10"
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 rounded border-input"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
                       disabled={loading}
                     />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Display name for the leaderboard
-                  </p>
+                    <span className="text-sm text-muted-foreground">
+                      I have read and agree to the terms of use
+                    </span>
+                  </label>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                      disabled={loading || !!invitationToken}
-                    />
-                  </div>
-                </div>
+              {error && (
+                <div className="text-sm text-destructive">{error}</div>
+              )}
 
-                {/* Terms of Use */}
-                {orgContext.terms_of_use && (
-                  <div className="space-y-2">
-                    <Label>Terms of Use</Label>
-                    <div className="rounded-md border bg-muted/50 p-3 max-h-40 overflow-y-auto">
-                      <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-                        {orgContext.terms_of_use}
-                      </p>
-                    </div>
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 rounded border-input"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        disabled={loading}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        I have read and agree to the terms of use
-                      </span>
-                    </label>
-                  </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={
+                  loading ||
+                  !email ||
+                  !password ||
+                  (!!orgContext.terms_of_use && !termsAccepted)
+                }
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating account…
+                  </>
+                ) : (
+                  "Join Challenge"
                 )}
+              </Button>
 
-                {error && (
-                  <div className="text-sm text-destructive">{error}</div>
-                )}
+              <p className="text-center text-sm text-muted-foreground">
+                We&apos;ll send you a confirmation link to activate your account.
+              </p>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading || !email || (!!orgContext.terms_of_use && !termsAccepted)}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Sending code...
-                    </>
-                  ) : (
-                    "Join Challenge"
-                  )}
-                </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  No password needed. We&apos;ll send you a 6-digit code.
-                </p>
-              </form>
-            )}
+              <p className="text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link href="/login" className="underline hover:text-foreground">
+                  Sign in
+                </Link>
+              </p>
+            </form>
           </CardContent>
         </Card>
       </div>
@@ -420,11 +357,13 @@ function JoinOrganizationContent() {
 
 export default function JoinOrganizationPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
       <JoinOrganizationContent />
     </Suspense>
   );

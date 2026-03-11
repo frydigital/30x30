@@ -57,7 +57,7 @@ export default async function Home() {
     .from("organizations")
     .select("id, name, slug, description, challenge_start_date, challenge_end_date")
     .eq("is_active", true)
-    .eq("public_signup", true)
+    .neq("public_signup", false)
     .order("created_at", { ascending: false });
 
   const challenges = (activeChallenges as ActiveChallenge[] | null) ?? [];
