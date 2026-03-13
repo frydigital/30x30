@@ -79,12 +79,24 @@ export default async function Home() {
 
     if (memberships) {
       userChallenges = memberships
-        .filter((m) => {
-          const org = m.organizations as { slug: string; name: string; is_active: boolean } | null;
-          return org?.is_active;
-        })
         .map((m) => {
-          const org = m.organizations as { slug: string; name: string; is_active: boolean };
+          // organizations may be an array or object depending on join
+          const orgs = m.organizations as
+            | { slug: string; name: string; is_active: boolean }
+            | { slug: string; name: string; is_active: boolean }[]
+            | null;
+          if (Array.isArray(orgs)) {
+            // If array, take the first (should only be one due to .single() in select)
+            return orgs.length > 0 ? { ...m, organizations: orgs[0] } : null;
+          }
+          if (orgs) {
+            return { ...m, organizations: orgs };
+          }
+          return null;
+        })
+        .filter((m): m is { role: string; organizations: { slug: string; name: string; is_active: boolean } } => !!m && !!m.organizations && m.organizations.is_active)
+        .map((m) => {
+          const org = m.organizations;
           return { slug: org.slug, name: org.name, role: m.role };
         });
     }
