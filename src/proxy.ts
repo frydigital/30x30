@@ -43,13 +43,20 @@ export async function proxy(request: NextRequest) {
   
   // If accessing root domain and on an organization-only route, redirect to main site
   if (isRootDomain(hostname)) {
-    // Routes that should only be accessible within an organization context
-    const orgOnlyRoutes = ['/org/', '/organization/'];
-    const isOrgOnlyRoute = orgOnlyRoutes.some(route => url.pathname.startsWith(route));
+    // In development, org context is passed via ?org= query param instead of subdomain.
+    // If the request has an org query param, treat it as an org-scoped request and allow through.
+    const hasOrgQueryParam = url.searchParams.has('org');
     
-    if (isOrgOnlyRoute) {
-      url.pathname = '/';
-      return NextResponse.redirect(url);
+    if (!hasOrgQueryParam) {
+      // Routes that should only be accessible within an organization context (on a subdomain)
+      const orgOnlyRoutes = ['/dashboard', '/activity', '/admin'];
+      const isOrgOnlyRoute = orgOnlyRoutes.some(route => url.pathname === route || url.pathname.startsWith(`${route}/`));
+      
+      if (isOrgOnlyRoute) {
+        url.pathname = '/';
+        url.search = '';
+        return NextResponse.redirect(url);
+      }
     }
   }
   

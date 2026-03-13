@@ -62,8 +62,8 @@ export default function SignupPage() {
       setError(error.message);
       setVerifying(false);
     } else {
-      // Redirect to dashboard on success
-      window.location.href = '/dashboard';
+      // Redirect to create-organization since signup without org context
+      window.location.href = '/create-organization';
     }
   };
 

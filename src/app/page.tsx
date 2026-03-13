@@ -2,12 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
+import { buildOrganizationDashboardUrl } from "@/lib/organizations/subdomain";
 import { Building2, CalendarDays, Flame, Target, Users } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-function buildOrganizationUrl(slug: string): string {
+function buildOrganizationJoinUrl(slug: string): string {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -44,6 +45,12 @@ interface ActiveChallenge {
   challenge_end_date: string | null;
 }
 
+interface UserChallenge {
+  slug: string;
+  name: string;
+  role: string;
+}
+
 export default async function Home() {
   const supabase = await createClient();
 
@@ -62,6 +69,39 @@ export default async function Home() {
 
   const challenges = (activeChallenges as ActiveChallenge[] | null) ?? [];
 
+  // If logged in, fetch the user's own challenges
+  let userChallenges: UserChallenge[] = [];
+  if (user) {
+    const { data: memberships } = await supabase
+      .from("organization_members")
+      .select("role, organizations(slug, name, is_active)")
+      .eq("user_id", user.id);
+
+    if (memberships) {
+      userChallenges = memberships
+        .map((m) => {
+          // organizations may be an array or object depending on join
+          const orgs = m.organizations as
+            | { slug: string; name: string; is_active: boolean }
+            | { slug: string; name: string; is_active: boolean }[]
+            | null;
+          if (Array.isArray(orgs)) {
+            // If array, take the first (should only be one due to .single() in select)
+            return orgs.length > 0 ? { ...m, organizations: orgs[0] } : null;
+          }
+          if (orgs) {
+            return { ...m, organizations: orgs };
+          }
+          return null;
+        })
+        .filter((m): m is { role: string; organizations: { slug: string; name: string; is_active: boolean } } => !!m && !!m.organizations && m.organizations.is_active)
+        .map((m) => {
+          const org = m.organizations;
+          return { slug: org.slug, name: org.name, role: m.role };
+        });
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -74,7 +114,7 @@ export default async function Home() {
           <nav className="flex items-center gap-4">
             {user ? (
               <Button asChild>
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/create-organization">Create Challenge</Link>
               </Button>
             ) : (
               <>
@@ -102,32 +142,61 @@ export default async function Home() {
             and compete on a shared leaderboard.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user ? (
-              <>
-                <Button asChild size="lg" className="text-lg px-8">
-                  <Link href="/dashboard">Go to Dashboard</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="text-lg px-8">
-                  <Link href="/create-organization">Create Challenge</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button asChild size="lg" className="text-lg px-8">
-                  <Link href="/create-organization">Create a Challenge</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="text-lg px-8">
-                  <Link href="/login">Log In</Link>
-                </Button>
-              </>
+            <Button asChild size="lg" className="text-lg px-8">
+              <Link href="/create-organization">Create a Challenge</Link>
+            </Button>
+            {!user && (
+              <Button asChild size="lg" variant="outline" className="text-lg px-8">
+                <Link href="/login">Log In</Link>
+              </Button>
             )}
           </div>
         </div>
       </section>
 
+      {/* User's challenges (logged in) */}
+      {user && userChallenges.length > 0 && (
+        <section className="py-12 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Your Challenges</h2>
+              <p className="text-muted-foreground">
+                Jump back in to one of your active challenges
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {userChallenges.map((challenge) => (
+                <div
+                  key={challenge.slug}
+                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{challenge.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{challenge.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 ml-4 shrink-0">
+                    <Button asChild size="sm">
+                      <Link href={buildOrganizationDashboardUrl(challenge.slug)}>
+                        Go to Dashboard
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Active Challenges */}
       {challenges.length > 0 && (
-        <section className="py-12 px-4">
+        <section className={`py-12 px-4${user && userChallenges.length > 0 ? " bg-muted/50" : ""}`}>
           <div className="container mx-auto max-w-4xl">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-2">Active Challenges</h2>
@@ -169,7 +238,7 @@ export default async function Home() {
                         Open
                       </Badge>
                       <Button asChild size="sm">
-                        <Link href={buildOrganizationUrl(challenge.slug)}>
+                        <Link href={buildOrganizationJoinUrl(challenge.slug)}>
                           View Challenge
                         </Link>
                       </Button>

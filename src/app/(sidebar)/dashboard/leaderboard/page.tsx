@@ -24,7 +24,7 @@ export default async function OrganizationLeaderboardPage({
   const orgSlug = params.org as string | undefined;
 
   if (!orgSlug) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   // Get organization
@@ -36,7 +36,7 @@ export default async function OrganizationLeaderboardPage({
     .single();
 
   if (!organization) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   // Verify user is a member
@@ -48,7 +48,7 @@ export default async function OrganizationLeaderboardPage({
     .single();
 
   if (!membership) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   // Get organization leaderboard
